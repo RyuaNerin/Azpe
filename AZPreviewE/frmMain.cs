@@ -482,7 +482,7 @@ namespace AZPreviewE
 
 
 				case Keys.F1:
-					Process.Start("https://ryuanerin.io/AZPreview-E").Dispose();
+					Process.Start("http://ryuanerin.github.io/AZPreview-E").Dispose();
 					return true;
 
 				case Keys.Escape:
