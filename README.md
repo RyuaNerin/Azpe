@@ -1,9 +1,11 @@
 # *AZPreview-E beta*
 
 마지막 업데이트 : 2015-05-21 (v0.1.1)
+
 Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
 
 아즈레아의 약간 부족한 이미지 뷰어를 강화하고자 한 프로그램입니다.
+
 [Usagination](https://github.com/Usagination) 이 만든 [AZPreview](https://github.com/Usagination/AZPreview) 를 업데이트 한 버전입니다.
 
 
