@@ -8,7 +8,7 @@ namespace AZPreviewE
 {
 	static class Program
 	{
-		public const string TagName = "v0.1.1";
+		public const string TagName = "v0.1.2";
 		public const string lpClassName = "AZPreview_Window";
 		public const string ProgramName = "AZPreview-E";
 

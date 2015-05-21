@@ -76,7 +76,7 @@ namespace AZPreviewE
 											MessageBoxIcon.Question
 											) == DialogResult.Yes)
 									{
-										Process.Start((string)jo["html_url"]).Dispose();
+										Process.Start((string)jo["html_url"]);
 										this.Close();
 									}
 								}
@@ -482,7 +482,7 @@ namespace AZPreviewE
 
 
 				case Keys.F1:
-					Process.Start("http://ryuanerin.github.io/AZPreview-E").Dispose();
+					Process.Start("http://ryuanerin.github.io/AZPreview-E");
 					return true;
 
 				case Keys.Escape:
@@ -521,9 +521,9 @@ namespace AZPreviewE
 			try
 			{
 				if (media.MediaType == Media.Types.Youtube)
-					Process.Start(media.OrigUrl).Dispose();
+					Process.Start(media.OrigUrl);
 				else
-					Process.Start(media.Url).Dispose();
+					Process.Start(media.Url);
 			}
 			catch
 			{
