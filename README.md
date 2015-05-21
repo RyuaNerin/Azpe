@@ -45,7 +45,7 @@ Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
 # 사용 방법
 ## Azurea 에서
 |단축키|설명|
-|-|-|
+|---|---|
 |G|이미지 보기 or AZPreview 창 활성화|
 |G + Shift|AZPreview 창 활성화|
 |G + Alt|맨 위로 설정/해제|
@@ -54,7 +54,7 @@ Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
 |.|다음 이미지|
 ## AZPreview-E 에서
 |단축키|설명|
-|-|-|
+|---|---|
 |← →|이전/다음 이미지|
 |Z|화면에 맞춤 / 원본 보기|
 |방향키 + Ctrl|(원본 보기중) 이미지 이동|
