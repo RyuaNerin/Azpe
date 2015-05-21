@@ -82,5 +82,3 @@ function()
 {
 	System.launchApplication(path, 'right', 0);
 });
-
-CustomLib
