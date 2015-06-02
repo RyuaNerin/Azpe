@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -9,12 +8,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripts", "Scripts", "{80FD26F9-4D97-49EB-9291-59C59457448D}"
-	ProjectSection(SolutionItems) = preProject
-		Scripts\AZPreviewE.js = Scripts\AZPreviewE.js
-	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AZPreviewE", "AZPreviewE\AZPreviewE.csproj", "{57199797-4701-4066-B5EB-1C064A908459}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azpe", "Azpe\Azpe.csproj", "{57199797-4701-4066-B5EB-1C064A908459}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,8 +23,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{80FD26F9-4D97-49EB-9291-59C59457448D} = {FC92C28B-D2F1-4230-BFA2-DD4BD01D278F}
 	EndGlobalSection
 EndGlobal

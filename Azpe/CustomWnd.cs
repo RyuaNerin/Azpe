@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 
-namespace AZPreviewE
+namespace Azpe
 {
 	class CustomWnd : IDisposable
 	{
@@ -16,7 +16,7 @@ namespace AZPreviewE
 
 		public void Dispose() 
 		{
-			Dispose(true);
+			this.Dispose(true);
 			GC.SuppressFinalize(this);
 		}
 
@@ -26,7 +26,7 @@ namespace AZPreviewE
 			{
 				if (m_hwnd != IntPtr.Zero)
 				{
-					WinApi.DestroyWindow(m_hwnd);
+					NativeMethods.DestroyWindow(m_hwnd);
 					m_hwnd = IntPtr.Zero;
 				}
 
@@ -39,14 +39,24 @@ namespace AZPreviewE
 			CustomWnd.m_custom = customProc;
 			this.m_wndproc = CustomWnd.WndProc;
 
-			var wndClass = new WinApi.WNDCLASS();
-			wndClass.lpszClassName = className;
-			wndClass.lpfnWndProc = Marshal.GetFunctionPointerForDelegate(m_wndproc);
+			var wndClass = new NativeMethods.WNDCLASS();
+			wndClass.lpszClassName	= className;
+			wndClass.lpfnWndProc	= Marshal.GetFunctionPointerForDelegate(m_wndproc);
 
-			if (WinApi.RegisterClassW(ref wndClass) == 0 && Marshal.GetLastWin32Error() != WinApi.ERROR_CLASS_ALREADY_EXISTS)
+			var resRegister	= NativeMethods.RegisterClass(ref wndClass);
+			var resError	= Marshal.GetLastWin32Error();
+
+			if (resRegister == 0 && resError != NativeMethods.ERROR_CLASS_ALREADY_EXISTS)
 				throw new Exception();
 
-			this.m_hwnd = WinApi.CreateWindowExW(0, className, String.Empty, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+			this.m_hwnd = NativeMethods.CreateWindowEx(0, className, String.Empty, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+
+			Console.WriteLine(this.m_hwnd.ToString());
+		}
+
+		~CustomWnd()
+		{
+			this.Dispose(true);
 		}
 
 		private static IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
@@ -54,7 +64,7 @@ namespace AZPreviewE
 			var handled	= false;
 			var result	= CustomWnd.m_custom.Invoke(hWnd, msg, wParam, lParam, ref handled);
 			
-			return handled ? result : WinApi.DefWindowProcW(hWnd, msg, wParam, lParam);
+			return handled ? result : NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
 		}
 	}
 }

@@ -1,6 +1,6 @@
-﻿namespace AZPreviewE
+﻿namespace Azpe
 {
-	partial class frmMain
+	partial class FrmMain
 	{
 		/// <summary>
 		/// 필수 디자이너 변수입니다.
@@ -15,7 +15,7 @@
 		{
 			if (disposing && (components != null))
 			{
-				components.Dispose();
+				this.components.Dispose();
 			}
 			base.Dispose(disposing);
 		}
@@ -28,60 +28,46 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmMain));
-			this.elem = new System.Windows.Forms.Integration.ElementHost();
-			this.media = new AZPreviewE.MediaElement();
-			this.image = new AZPreviewE.PictureBoxE();
+			this.components = new System.ComponentModel.Container();
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
 			this.sfd = new System.Windows.Forms.SaveFileDialog();
-			((System.ComponentModel.ISupportInitialize)(this.image)).BeginInit();
+			this.ntf = new System.Windows.Forms.NotifyIcon(this.components);
 			this.SuspendLayout();
-			// 
-			// elem
-			// 
-			this.elem.Location = new System.Drawing.Point(12, 22);
-			this.elem.Name = "elem";
-			this.elem.Size = new System.Drawing.Size(87, 73);
-			this.elem.TabIndex = 1;
-			this.elem.Child = this.media;
-			// 
-			// image
-			// 
-			this.image.Location = new System.Drawing.Point(105, 22);
-			this.image.Name = "image";
-			this.image.Size = new System.Drawing.Size(167, 128);
-			this.image.TabIndex = 0;
-			this.image.TabStop = false;
 			// 
 			// sfd
 			// 
 			this.sfd.RestoreDirectory = true;
 			// 
-			// frmMain
+			// ntf
 			// 
-			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
+			this.ntf.Icon = ((System.Drawing.Icon)(resources.GetObject("ntf.Icon")));
+			this.ntf.Visible = true;
+			// 
+			// FrmMain
+			// 
+			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+			this.BackColor = System.Drawing.SystemColors.Control;
 			this.ClientSize = new System.Drawing.Size(284, 162);
-			this.Controls.Add(this.elem);
-			this.Controls.Add(this.image);
+			this.DoubleBuffered = true;
+			this.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MinimumSize = new System.Drawing.Size(150, 150);
-			this.Name = "frmMain";
+			this.Name = "FrmMain";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.Text = "[ 0 / 0 ] AZPreview-E";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
+			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FrmMain_FormClosed);
 			this.Shown += new System.EventHandler(this.frmMain_Shown);
 			this.ResizeEnd += new System.EventHandler(this.frmMain_ResizeEnd);
-			((System.ComponentModel.ISupportInitialize)(this.image)).EndInit();
 			this.ResumeLayout(false);
 
 		}
 
 		#endregion
 
-		private PictureBoxE image;
-		private System.Windows.Forms.Integration.ElementHost elem;
-		private MediaElement media;
 		internal System.Windows.Forms.SaveFileDialog sfd;
+		private System.Windows.Forms.NotifyIcon ntf;
 	}
 }
 

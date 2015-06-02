@@ -1,12 +1,12 @@
-# *AZPreview-E beta*
+# *Azpe
 
-마지막 업데이트 : 2015-05-21 (v0.1.1)
+마지막 업데이트 : 2015-06-02 (v1.0.0)
 
-Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
+Made by [RyuaNerin](https://ryuanerin.kr/)
 
 아즈레아의 약간 부족한 이미지 뷰어를 강화하고자 한 프로그램입니다.
 
-[Usagination](https://github.com/Usagination) 이 만든 [AZPreview](https://github.com/Usagination/AZPreview) 를 업데이트 한 버전입니다.
+[Usagination](https://github.com/Usagination) 이 만든 [AZPreview](https://github.com/Usagination/AZPreview) 를 마개조 하여 탄생되었습니다.
 
 
 * 지원 목록
@@ -14,10 +14,7 @@ Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
  * **트위터 동영상 (gif 파일 포함)**
  * Youtube (미리보기)
  * 기타 이미지 업로드 사이트
-
-
-* 지원 예정 목록
- * Youtube / Vine 등 동영상 서비스 추가 지원
+ * vine 동영상 재생 가능
 
 
 # LICENSE
@@ -25,36 +22,29 @@ Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
 * [Json Toolkit : Ms-Pl](http://jsontoolkit.codeplex.com/license)
 
 
-# 설치 방법
+# HOW TO INSTALL
 
 [.Net Framework 4.0](https://www.microsoft.com/ko-kr/download/details.aspx?id=17851) 이 설치되어 있어야 합니다.
 
-1. [Release](https://github.com/RyuaNerin/AZPreview-E/releases) 에서 최신 AZPreview-E 를 다운로드 합니다
+1. [Release](https://github.com/RyuaNerin/Azpe/releases) 에서 최신 Azpe 를 다운로드 합니다
 
-2. 다운로드한 파일의 압축을 풀어서 나온 Scripts 폴더를
+2. 실행합니다
 
-3. 아즈레아가 있는 폴더에 집어넣습니다
+3. 아즈레아를 키고 `설치` 를 클릭합니다
 
-4. 아즈레아를 키고 하단 맨 오른쪽 메뉴를 클릭한 후에
-
-5. `UI 설정`을 클릭하고 `스크립트 확장 활성화` 를 클릭합니다
-
-6. 아즈레아를 끄고 다시 킵니다!
-
-7. **Good!**
+4. **끝!**
 
 
-# 사용 방법
-## Azurea 에서
+# HOW TO USE
+## Azurea
 |단축키|설명|
 |---|---|
-|G|이미지 보기 or AZPreview 창 활성화|
-|G + Shift|AZPreview 창 활성화|
+|G|AZPreview-E 로 보기|
 |G + Alt|맨 위로 설정/해제|
-|G + Shift + Ctrl|종료|
-|,|이전 이미지|
-|.|다음 이미지|
-## AZPreview-E 에서
+|G + Shift|창 닫기|
+
+
+## Azpe
 |단축키|설명|
 |---|---|
 |← →|이전/다음 이미지|
@@ -63,9 +53,9 @@ Made by [RyuaNerin](https://github.com/RyuaNerin/AZPreview-E/)
 |방향키 + Shift|창 이동|
 |방향키 + Alt| 창 크기 조절|
 |Ctrl + S|이미지 저장|
-|G / A / Tab|아즈레아로 이동|
+|G / Tab|아즈레아로 이동|
+|Ctrl + R|재시도 (다운로드 실패일 때)|
 |W|웹에서 보기|
 |F1|홈페이지 열기|
 |Esc / Enter|창 닫기|
-
-
+|V|azpe 버전 확인|
