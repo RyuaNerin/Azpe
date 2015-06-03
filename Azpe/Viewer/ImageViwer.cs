@@ -92,7 +92,7 @@ namespace Azpe.Viewer
 		
 		private static RectangleF	m_progRect	= new RectangleF(0, 0, 100, 10);
 		private static Pen			m_progLine	= Pens.DimGray;
-		private static Brush		m_progBack	= Brushes.Gainsboro;
+		private static Brush		m_progBack	= new LinearGradientBrush(m_progRect, Color.Gainsboro, Color.LightGray, LinearGradientMode.Vertical);
 		private static Brush		m_progProg	= new LinearGradientBrush(m_progRect, Color.LightGreen, Color.Green, LinearGradientMode.Vertical);
 
 		private GraphicsPath DrawArc(RectangleF rect, float dia)

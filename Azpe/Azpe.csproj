@@ -67,7 +67,9 @@
   <PropertyGroup>
     <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
-  <PropertyGroup />
+  <PropertyGroup>
+    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -135,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="jsontoolkit\LICENSE.txt" />
+    <None Include="Properties\app.manifest" />
     <None Include="Resources\script.js" />
   </ItemGroup>
   <ItemGroup>

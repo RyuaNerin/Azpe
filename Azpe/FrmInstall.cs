@@ -85,9 +85,8 @@ namespace Azpe
 			
 			File.Copy(Application.ExecutablePath, path);
 			
-
 			// 스크립트 활성화
-			NativeMethods.WritePrivateProfileString("Scripting", "EnableScripting", "1", Path.Combine(pathAz, "azurea.ini8"));
+			NativeMethods.WritePrivateProfileString("Scripting", "EnableScripting", "1", Path.Combine(pathAz, "Azurea.ini8"));
 			
 			//////////////////////////////////////////////////////////////////////////
 

@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace Azpe.Viewer
 {
-	public enum MediaTypes : byte { Image, Video, VideoThumb }
-	public enum Statuses : byte { Download, Complete, Error }
+	public enum MediaTypes : byte	{ Image,	Video,		VideoThumb	}
+	public enum Statuses : byte		{ Download,	Complete,	Error		}
 
-	public class MediaInfo
+	public class MediaInfo : IDisposable
 	{
 		private AzpViewer	m_parent;
 		private int			m_index;
-		private int			m_retry = 3;
+		private int			m_retry	= 3;
 
 		public MediaTypes	MediaType	{ get; private set; }
 		public string		OrigUrl		{ get; private set; }
@@ -25,6 +25,9 @@ namespace Azpe.Viewer
 		public long			Total		{ get; private set; }
 		public Statuses		Status		{ get; private set; }
 
+		private MediaInfo()
+		{
+		}
 
 		~MediaInfo()
 		{
@@ -76,10 +79,6 @@ namespace Azpe.Viewer
 			return media;
 		}
 
-		private MediaInfo()
-		{
-		}
-
 		public void StartDownload()
 		{
 			this.Status = Statuses.Download;
@@ -95,7 +94,7 @@ namespace Azpe.Viewer
 			new Task(this.Download).Start();
 
 			if (!this.m_disposed)
-				this.m_parent.RefreshItem();
+				this.m_parent.Refresh();
 		}
 			
 		private static RegexOptions regRules = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
@@ -187,6 +186,9 @@ namespace Azpe.Viewer
 
 				else if (this.MediaType == MediaTypes.Video)
 					this.GetLinkVideo();
+
+				else
+					this.Status = Statuses.Complete;
 				
 				if (this.m_retry > 0)
 					m_retry--;
@@ -199,7 +201,7 @@ namespace Azpe.Viewer
 		public void Refresh()
 		{
 			 if (!this.m_disposed && this.m_parent.CurrentIndex == this.m_index)
-				 this.m_parent.RefreshItem();
+				 this.m_parent.Refresh();
 		}
 
 		private void DownloadImageDo()
@@ -238,7 +240,7 @@ namespace Azpe.Viewer
 								this.Total = res.ContentLength;
 
 								if (!this.m_disposed)
-									this.m_parent.RefreshItem();
+									this.m_parent.Refresh();
 
 								using (Stream stm = res.GetResponseStream())
 								{
@@ -313,6 +315,8 @@ namespace Azpe.Viewer
 					this.Status = Statuses.Error;
 				}
 			}
+
+			this.Status = Statuses.Complete;
 		}
 	}
 }

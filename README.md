@@ -1,6 +1,6 @@
 # *Azpe
 
-마지막 업데이트 : 2015-06-02 (v1.0.0)
+마지막 업데이트 : 2015-06-04 (v1.0.1)
 
 Made by [RyuaNerin](https://ryuanerin.kr/)
 
@@ -39,7 +39,7 @@ Made by [RyuaNerin](https://ryuanerin.kr/)
 ## Azurea
 |단축키|설명|
 |---|---|
-|G|AZPreview-E 로 보기|
+|G|Azpe 로 보기|
 |G + Alt|맨 위로 설정/해제|
 |G + Shift|창 닫기|
 

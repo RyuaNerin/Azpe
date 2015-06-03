@@ -49,7 +49,7 @@ namespace Azpe.Viewer
 				if (0 <= value && value < this.m_lst.Count)
 					this.m_index = value;
 
-				this.RefreshItem();
+				this.Refresh();
 			}
 		}
 
@@ -98,7 +98,7 @@ namespace Azpe.Viewer
 			this.m_form.BackColor	= Color.White;
 			this.m_pic.BackColor	= Color.White;
 			this.m_media.Background = System.Windows.Media.Brushes.White;
-			this.RefreshItem();
+			this.Refresh();
 		}
 
 		private void LostFocus(object sender, EventArgs e)
@@ -106,20 +106,20 @@ namespace Azpe.Viewer
 			this.m_form.BackColor	= Color.WhiteSmoke;
 			this.m_pic.BackColor	= Color.WhiteSmoke;
 			this.m_media.Background	= System.Windows.Media.Brushes.WhiteSmoke;
-			this.RefreshItem();
+			this.Refresh();
 		}
 		
 		public void AddUrl(string urls)
 		{
-			this.m_indexBef	= 0;
+			this.m_indexBef	= -1;
 			this.m_index	= 0;
 
 			this.m_lst.ForEach(e => e.Dispose());
 			this.m_lst.Clear();
 			
-			this.RefreshItem();
+			this.Refresh();
 
-			if (urls != "empty")
+			if (urls != "init")
 			{
 				var lstUrls = new List<string>();
 
@@ -141,14 +141,14 @@ namespace Azpe.Viewer
 				}
 			}
 			
-			this.RefreshItem();
+			this.Refresh();
 		}
 
-		public void RefreshItem()
+		public void Refresh()
 		{
 			if (this.m_form.InvokeRequired)
 			{
-				this.m_form.Invoke(new Action(this.RefreshItem));
+				this.m_form.Invoke(new Action(this.Refresh));
 			}
 			else
 			{
@@ -190,7 +190,6 @@ namespace Azpe.Viewer
 							break;
 
 						case MediaTypes.Video:
-							this.m_media.Pause();
 
 							switch (cur.Status)
 							{
@@ -206,6 +205,7 @@ namespace Azpe.Viewer
 
 									if (this.m_indexBef != this.m_index)
 									{
+										this.m_media.Pause();
 										this.m_indexBef	 = this.m_index;
 
 										this.m_media.Media.Source = null;
