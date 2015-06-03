@@ -71,7 +71,7 @@ namespace Azpe
 
 		private void UpdateCheck()
 		{
-			if ((Settings.NewChecked - DateTime.UtcNow).TotalDays < 1)
+			if ((DateTime.UtcNow - Settings.NewChecked).TotalDays < 1)
 				return;
 
 			try
