@@ -415,7 +415,7 @@ namespace Azpe
 						}
 					}
 					return true;
-
+					
 				case Keys.Control | Keys.R:
 					this.m_viewer.DownloadImage();
 					return true;
@@ -443,6 +443,7 @@ namespace Azpe
 
 				case Keys.Escape:
 				case Keys.Enter:
+				case Keys.Control | Keys.W:
 					this.Hide();
 					return true;
 
