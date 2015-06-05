@@ -13,8 +13,30 @@ namespace Azpe
 		private static string	m_path;
 		private static FrmMain	m_form;
 		
-		private static Dictionary<string, string> m_cache = new Dictionary<string,string>();
-		private static Random m_rnd = new Random(DateTime.UtcNow.Millisecond);
+		private struct CacheInfo
+		{
+			public CacheInfo(string url)
+			{
+				string filename;
+				do
+				{
+					filename = Path.GetRandomFileName();
+				} while (Settings.m_cache.Exists(e => e.Name == filename));
+
+				this.Url	= url;
+				this.Name	= filename;
+			}
+			public CacheInfo(string url, string filename)
+			{
+				this.Url	= url;
+				this.Name	= filename;
+			}
+			public string Url;
+			public string Name;
+		}
+
+		private static List<CacheInfo>	m_cache	= new List<CacheInfo>();
+		private static Random			m_rnd	= new Random(DateTime.UtcNow.Millisecond);
 
 		public static DateTime NewChecked { get; set; }
 
@@ -22,23 +44,31 @@ namespace Azpe
 		{
 			lock (Settings.m_cache)
 			{
-				if (m_cache.ContainsValue(url))
-				{
-					return Settings.m_cache.First(e => e.Value == url).Key;
-				}
-				else
-				{
-					string key;
-					do
-					{
-						key = Path.GetRandomFileName();
-					} while (Settings.m_cache.ContainsKey(key));
-					
-					Settings.m_cache.Add(key, url);
-					Settings.Save();
+				for (int i = 0; i < Settings.m_cache.Count; ++i)
+					if (Settings.m_cache[i].Url == url)
+						return Settings.m_cache[i].Name;
 
-					return key;
-				}
+				var info = new CacheInfo(url);
+				Settings.m_cache.Add(info);
+				Settings.Save();
+				return info.Name;
+			}
+		}
+
+		public static void DelCacheFile(string url, string name, bool save = true)
+		{
+			lock (Settings.m_cache)
+			{
+				int i = 0;
+				while (i < Settings.m_cache.Count)
+					if ((!string.IsNullOrEmpty(url)  && Settings.m_cache[i].Url == url) &&
+						(!string.IsNullOrEmpty(name) && Settings.m_cache[i].Name == name))
+						Settings.m_cache.RemoveAt(i);
+					else
+						i++;
+
+				if (save)
+					Settings.Save();
 			}
 		}
 
@@ -58,13 +88,20 @@ namespace Azpe
 				Get<bool>		(jo, "TopMost",		e => Settings.m_form.TopMost = e);
 				Get<string>		(jo, "SavePath",	e => Settings.m_form.sfd.InitialDirectory = e);
 				Get<string>		(jo, "UpChecked",	e => Settings.NewChecked = DateTime.Parse(e));
-				Get<JsonObject>	(jo, "Cache",		e => { foreach (var st in e) Settings.m_cache.Add(st.Key, Convert.ToString(st.Value)); });
+				Get<JsonObject>	(jo, "Cache",		e => { foreach (var st in e) Settings.m_cache.Add(new CacheInfo(Convert.ToString(st.Value), st.Key)); });
+				Get<JsonObject>	(jo, "Cache2",		e => { foreach (var st in e) Settings.m_cache.Add(new CacheInfo(st.Key, Convert.ToString(st.Value))); });
 			}
 			catch
 			{
 			}
 
 			Settings.ClearCache();
+		}
+
+		private static void Get<T>(JsonObject json, string value, Action<T> res)
+		{
+			object obj;
+			if (json.TryGetValue(value, out obj)) res.Invoke((T)obj);
 		}
 		
 		private static void ClearCache()
@@ -77,40 +114,29 @@ namespace Azpe
 				{
 					foreach (var file in Directory.GetFiles(Program.CacheDir))
 					{
-						try
-						{
-							if (File.GetLastAccessTimeUtc(file) <= expires)
-								File.Delete(file);
-						}
-						catch
-						{
-						}
-					}
-					
-					var fs		= Directory.GetFiles(Program.CacheDir);
-					var fsname	= new string[fs.Length];
-					var keys	= Settings.m_cache.Keys.ToArray();
+						string name = Path.GetFileName(file);
 
-					int i = 0;
-					for (i = 0; i < fs.Length; ++i)
-						fsname[i] = Path.GetFileName(fs[i]);
-					
-					for (i = 0; i < keys.Length; ++i)
-						if (!fsname.Contains(keys[i]))
-							Settings.m_cache.Remove(keys[i]);
-					
-					for (i = 0; i < fs.Length; ++i)
-					{
-						if (!Settings.m_cache.ContainsKey(fsname[i]))
+						if (File.GetLastAccessTimeUtc(file) <= expires ||
+							!Settings.m_cache.Exists(e => e.Name == name) ||
+							new FileInfo(file).Length == 0)
 						{
 							try
 							{
-								File.Delete(fs[i]);
+								File.Delete(file);
 							}
 							catch
-							{ }
+							{
+							}
+							Settings.DelCacheFile(null, Path.GetFileName(file), false);
 						}
 					}
+
+					int i = 0;
+					while (i < Settings.m_cache.Count)
+						if (!File.Exists(Path.Combine(Program.CacheDir, Settings.m_cache[i].Name)))
+							Settings.m_cache.RemoveAt(i);
+						else
+							i++;
 
 					Settings.Save();
 				}
@@ -124,32 +150,22 @@ namespace Azpe
 				{
 					var jo = new JsonObject();
 					var joCache = new JsonObject();
-					
-					jo.Add("Left",		Settings.m_form.Left);
-					jo.Add("Top",		Settings.m_form.Top);
-					jo.Add("Width",		Settings.m_form.Width);
-					jo.Add("Height",	Settings.m_form.Height);
-					jo.Add("TopMost",	Settings.m_form.TopMost);
-					jo.Add("SavePath",	Settings.m_form.sfd.InitialDirectory);
-					jo.Add("UpChecked",	Settings.NewChecked.ToString("yyyy-MM-dd HH:mm:ss"));
-					jo.Add("Cache",		joCache);
+
+					jo.Add("Left", Settings.m_form.Left);
+					jo.Add("Top", Settings.m_form.Top);
+					jo.Add("Width", Settings.m_form.Width);
+					jo.Add("Height", Settings.m_form.Height);
+					jo.Add("TopMost", Settings.m_form.TopMost);
+					jo.Add("SavePath", Settings.m_form.sfd.InitialDirectory);
+					jo.Add("UpChecked", Settings.NewChecked.ToString("yyyy-MM-dd HH:mm:ss"));
+					jo.Add("Cache2", joCache);
 
 					lock (Settings.m_cache)
-					{
-						foreach (var st in Settings.m_cache)
-							joCache.Add(st.Key, st.Value);
-					}
+						Settings.m_cache.ForEach(e => joCache.Add(e.Url, e.Name));
 
 					File.WriteAllText(Settings.m_path, jo.ToString(true), Encoding.UTF8);
 				}
 				).Start();
 		}
-
-		private static void Get<T>(JsonObject json, string value, Action<T> res)
-		{
-			object obj;
-			if (json.TryGetValue(value, out obj)) res.Invoke((T)obj);
-		}
-
 	}
 }

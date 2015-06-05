@@ -3,30 +3,77 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Azpe.Viewer
 {
-	public enum MediaTypes : byte	{ Image,	Video,		VideoThumb	}
-	public enum Statuses : byte		{ Download,	Complete,	Error		}
+	public enum MediaTypes	: byte { Image,		Video,		VideoThumb	}
+	public enum Statuses	: byte { Download,	Complete,	Error		}
 
 	public class MediaInfo : IDisposable
 	{
 		private AzpViewer	m_parent;
 		private int			m_index;
-		private int			m_retry	= 3;
+
+		private WebClient	m_web;
+		private string		m_temp;
+		private float		m_speed2;
+		private long		m_down2;
+		private DateTime	m_date;
 
 		public MediaTypes	MediaType	{ get; private set; }
 		public string		OrigUrl		{ get; private set; }
 		public string		Url			{ get; private set; }
 		public string		CachePath	{ get; private set; }
 		public Image		Image		{ get; private set; }
-		public long			Down		{ get; private set; }
-		public long			Total		{ get; private set; }
+		public float		Progress	{ get; private set; }
+		public float		Speed		{ get; private set; }
 		public Statuses		Status		{ get; private set; }
 
 		private MediaInfo()
 		{
+			this.m_web = new WebClient();
+			this.m_web.DownloadFileCompleted += DownloadFileCompleted;
+			this.m_web.DownloadProgressChanged += DownloadProgressChanged;
+		}
+
+		private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+		{
+			DateTime dt = DateTime.UtcNow;
+			TimeSpan ts = dt - this.m_date;
+
+			if (this.m_down2 == 0)
+			{
+				this.Speed		= e.BytesReceived / (float)ts.TotalSeconds;
+
+				this.m_date		= dt;
+				this.m_down2	= e.BytesReceived;
+			}
+			else if (ts.TotalMilliseconds > 250)
+			{
+				this.m_speed2	= (this.m_down2 - e.BytesReceived) / (float)ts.TotalSeconds;
+				this.Speed		= (this.Speed + this.m_down2) / 2;
+
+				this.m_date		= dt;
+				this.m_down2	= e.BytesReceived;
+			}
+
+			this.Progress = e.TotalBytesToReceive == 0 ? 0 : e.BytesReceived / (float)e.TotalBytesToReceive;
+
+			this.Refresh();
+		}
+
+		private void DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+		{
+			if (e.Error != null)
+			{
+				File.Delete(this.m_temp);
+				Settings.DelCacheFile((string)e.UserState, null);
+
+				this.Status = Statuses.Error;
+				this.Refresh();
+			}
 		}
 
 		~MediaInfo()
@@ -51,6 +98,12 @@ namespace Azpe.Viewer
 				{
 					this.Image.Dispose();
 					this.Image = null;
+				}
+
+				if (this.m_web != null)
+				{
+					this.m_web.CancelAsync();
+					this.m_web.Dispose();
 				}
 			}
 		}
@@ -79,6 +132,12 @@ namespace Azpe.Viewer
 			return media;
 		}
 
+		public void Refresh()
+		{
+			if (!this.m_disposed && this.m_parent.CurrentIndex == this.m_index)
+				this.m_parent.Refresh();
+		}
+
 		public void StartDownload()
 		{
 			this.Status = Statuses.Download;
@@ -88,15 +147,13 @@ namespace Azpe.Viewer
 				File.Delete(this.CachePath);
 			}
 			catch
-			{
-			}
+			{ }
 
 			new Task(this.Download).Start();
 
-			if (!this.m_disposed)
-				this.m_parent.Refresh();
+			this.Refresh();
 		}
-			
+		
 		private static RegexOptions regRules = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
 		private static Regex regYoutube	= new Regex(@"^(?:https?://)?(?:(?:(?:www\.)?youtube\.com/(?:v/)?watch[\?#]?.*v=)|(?:youtu\.be/))([A-Za-z0-9_\-]+).*$", regRules);
 		private static Regex regVine	= new Regex(@"^https?://vine.co/v/[a-zA-Z0-9]+$", regRules);
@@ -158,7 +215,6 @@ namespace Azpe.Viewer
 			}
 
 			return null;
-
 		}
 
 		private static char[] InvalidChars = Path.GetInvalidFileNameChars();
@@ -179,6 +235,7 @@ namespace Azpe.Viewer
 
 		private void Download()
 		{
+			int retry = 3;
 			do
 			{
 				if (this.MediaType != MediaTypes.Video)
@@ -190,18 +247,9 @@ namespace Azpe.Viewer
 				else
 					this.Status = Statuses.Complete;
 				
-				if (this.m_retry > 0)
-					m_retry--;
-
-			} while (this.m_retry > 0 && this.Status == Statuses.Error);
+			} while (--retry > 0 && this.Status == Statuses.Error);
 						
 			this.Refresh();
-		}
-
-		public void Refresh()
-		{
-			 if (!this.m_disposed && this.m_parent.CurrentIndex == this.m_index)
-				 this.m_parent.Refresh();
 		}
 
 		private void DownloadImageDo()
@@ -223,52 +271,16 @@ namespace Azpe.Viewer
 					if (!Directory.Exists(Program.CacheDir))
 						Directory.CreateDirectory(Program.CacheDir);
 
-					string temp = cachePath + ".tmp";
+					this.m_temp = cachePath + ".tmp";
 
-					try
-					{
-						using (file = new FileStream(temp, FileMode.OpenOrCreate, FileAccess.Write))
-						{
-							file.SetLength(0);
-							var req = WebRequest.Create(this.Url) as HttpWebRequest;
-							req.UserAgent = Program.UserAgent;
-							req.Timeout = 5000;
-							req.ReadWriteTimeout = 5000;
+					this.m_date = DateTime.UtcNow;
+					this.m_web.Headers.Add(HttpRequestHeader.UserAgent, Program.UserAgent);
+					this.m_web.DownloadFileAsync(new Uri(this.Url), this.m_temp, this.Url);
 
-							using (var res = req.GetResponse())
-							{
-								this.Total = res.ContentLength;
+					while (this.m_web.IsBusy)
+						Thread.Sleep(100);
 
-								if (!this.m_disposed)
-									this.m_parent.Refresh();
-
-								using (Stream stm = res.GetResponseStream())
-								{
-									int		read;
-									byte[]	buff = new byte[4096];
-
-									while ((read = stm.Read(buff, 0, 4096)) > 0)
-									{
-										if (this.m_disposed)
-											throw new Exception();
-
-										file.Write(buff, 0, read);
-										this.Down += read;
-
-										this.Refresh();
-									}
-								}
-							}
-						}
-					}
-					catch (Exception)
-					{
-						this.Status = Statuses.Error;
-						
-						throw;
-					}
-
-					File.Move(temp, cachePath);
+					File.Move(this.m_temp, cachePath);
 
 					using (file = new FileStream(cachePath, FileMode.Open, FileAccess.Read))
 						this.Image = Image.FromStream(file);
@@ -280,6 +292,8 @@ namespace Azpe.Viewer
 			{
 				this.Status = Statuses.Error;
 			}
+
+			this.Refresh();
 		}
 		
 		private static Regex regVineMp4 = new Regex("<video src=\"([^\"])\">", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -291,12 +305,9 @@ namespace Azpe.Viewer
 
 				try
 				{
-					var req = HttpWebRequest.Create(this.OrigUrl) as HttpWebRequest;
-					req.UserAgent = Program.UserAgent;
+					this.m_web.Headers.Add(HttpRequestHeader.UserAgent, Program.UserAgent);
 
-					using (var res = req.GetResponse())
-					using (var reader = new StreamReader(res.GetResponseStream()))
-						body = reader.ReadToEnd();
+					body = this.m_web.DownloadString(this.Url);
 				}
 				catch
 				{

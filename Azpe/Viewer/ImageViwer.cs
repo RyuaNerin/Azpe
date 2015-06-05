@@ -1,49 +1,59 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
+
+using WeakRef = System.WeakReference;
 
 namespace Azpe.Viewer
 {
 	[System.ComponentModel.DesignerCategory("CODE")]
 	internal class ImageViwer : Control
 	{
-		private Image	m_image	= null;
-		private float	m_prog	= 0f;
+		private Statuses	m_status = Statuses.Download;
+		private Image		m_image	= null;
+		private float		m_prog	= 0f;
+		private float		m_speed = 0f;
 
-		private Point	m_location	= new Point(0, 0);
-		private bool	m_original	= false;
+		private Point		m_location	= new Point(0, 0);
+		private bool		m_original	= false;
 
-		private bool	m_move		= false;
-		private Point	m_mouse;
+		private bool		m_move		= false;
+		private Point		m_mouse;
 		
 		public ImageViwer() : base()
 		{
 			this.DoubleBuffered = true;
 		}
 
-		public void SetProgress(long downloaded, long total)
+		public void SetDownload(float progress, float speed)
 		{
-			this.m_image	= null;
-			this.m_prog		= total == 0 ? 0f : (float)downloaded / total;
+			this.m_status	= Statuses.Download;
+			this.m_prog		= progress;
+			this.m_speed	= speed;
 
 			this.Invalidate();
 		}
 		public void SetImage(Image image)
 		{
+			this.m_status	= Statuses.Complete;
 			this.m_image	= image;
 
 			this.Invalidate();
 		}
 		public void SetError()
 		{
-			this.m_image	= Properties.Resources.error;
+			this.m_status	= Statuses.Error;
 
 			this.Invalidate();
 		}
 
 		public void ImageMove(int x, int y)
 		{
+			if (this.m_status != Statuses.Complete)
+				return;
+
 			this.m_location.X += x * this.m_image.Width  / 20;
 			this.m_location.Y += y * this.m_image.Height / 20;
 
@@ -68,7 +78,7 @@ namespace Azpe.Viewer
 
 		private void CheckPosition()
 		{
-			if (this.m_image == null)
+			if (this.m_status != Statuses.Complete)
 				return;
 
 			try
@@ -90,12 +100,22 @@ namespace Azpe.Viewer
 			}
 		}
 		
-		private static RectangleF	m_progRect	= new RectangleF(0, 0, 100, 10);
+		private static Rectangle	m_progSpeed	= new Rectangle(0, 0, 100, 10);
+		private static Rectangle	m_progRect	= new Rectangle(0, 10, 100, 10);
 		private static Pen			m_progLine	= Pens.DimGray;
-		private static Brush		m_progBack	= new LinearGradientBrush(m_progRect, Color.Gainsboro, Color.LightGray, LinearGradientMode.Vertical);
-		private static Brush		m_progProg	= new LinearGradientBrush(m_progRect, Color.LightGreen, Color.Green, LinearGradientMode.Vertical);
+		private static Color		m_progBack0	= Color.Gainsboro;
+		private static Color		m_progBack1	= Color.LightGray;
+		private static Color		m_progProg0	= Color.LightGreen;
+		private static Color		m_progProg1	= Color.Green;
+		private static Font			m_strFont	= new Font("Consolas", 8.0f, FontStyle.Regular);
+		
+		private static StringFormat m_strFormat = new StringFormat()
+		{
+			Alignment		= StringAlignment.Center,
+			LineAlignment	= StringAlignment.Far
+		};
 
-		private GraphicsPath DrawArc(RectangleF rect, float dia)
+		private static GraphicsPath DrawArc(RectangleF rect, float dia)
 		{
 			GraphicsPath path = new GraphicsPath();
 
@@ -116,14 +136,24 @@ namespace Azpe.Viewer
 			return path;
 		}
 
+		private static string GetSpeed(float down)
+		{
+			if (down < 1000)
+				return string.Format("{0:##0.0} B/s", down);
+			else if (down < 1024 * 1000)
+				return string.Format("{0:##0.0} KB/s", down / 1024);
+			else
+				return string.Format("{0:##0.0} MB/s", down / 1024 / 1024);
+		}
+
 		protected override void OnPaint(PaintEventArgs e)
 		{
 			e.Graphics.Clear(this.BackColor);
 
-			if (this.m_image == null)
+			if (this.m_status == Statuses.Download)
 			{
-				e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-				e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+				e.Graphics.SmoothingMode		= SmoothingMode.AntiAlias;
+				e.Graphics.InterpolationMode	= InterpolationMode.HighQualityBicubic;
 
 				var back = new RectangleF(
 					(this.Width  - ImageViwer.m_progRect.Width)  / 2,
@@ -139,100 +169,104 @@ namespace Azpe.Viewer
 
 				var dia = 4 / 2f;
 
-				using (GraphicsPath pathBack = DrawArc(back, dia))
-				using (GraphicsPath pathProg = DrawArc(prog, dia))
+				using (var pathBack  = DrawArc(back, dia))
+				using (var pathProg  = DrawArc(prog, dia))
+				using (var brushBack = new LinearGradientBrush(back, ImageViwer.m_progBack0, ImageViwer.m_progBack1, LinearGradientMode.Vertical))
+				using (var brushProg = new LinearGradientBrush(back, ImageViwer.m_progProg0, ImageViwer.m_progProg1, LinearGradientMode.Vertical))
 				{
-					e.Graphics.FillPath(ImageViwer.m_progBack, pathBack);
-
-					e.Graphics.FillPath(ImageViwer.m_progProg, pathProg);
-
+					e.Graphics.FillPath(brushBack, pathBack);
+					e.Graphics.FillPath(brushProg, pathProg);
 					e.Graphics.DrawPath(ImageViwer.m_progLine, pathBack);
 				}
+
+				if (this.m_speed != 0)
+					e.Graphics.DrawString(
+						ImageViwer.GetSpeed(this.m_speed),
+						ImageViwer.m_strFont,
+						Brushes.Black,
+						new RectangleF(back.X, back.Y - 20, back.Width, 20),
+						ImageViwer.m_strFormat);
 			}
 			else
 			{
-				this.CheckPosition();
+				Rectangle dest, src;
 
-				if (this.m_original)
+				if (this.m_status == Statuses.Complete)
 				{
-					int drwX, drwY, drwW, drwH;
-					int imgX, imgY, imgW, imgH;
-
-					if (this.Width >= this.m_image.Width)
-					{
-						drwX = (this.Width - this.m_image.Width) / 2;
-						drwW = this.m_image.Width;
-						imgX = 0;
-						imgW = this.m_image.Width;
-					}
-					else
-					{
-						drwX = 0;
-						drwW = e.ClipRectangle.Width;
-						imgX = this.m_location.X;
-						imgW = this.Width;
-					}
-
-					if (this.Height >= this.m_image.Height)
-					{
-						drwY = (this.Height - this.m_image.Height) / 2;
-						drwH = this.m_image.Height;
-						imgY = 0;
-						imgH = this.m_image.Height;
-					}
-					else
-					{
-						drwY = 0;
-						drwH = e.ClipRectangle.Height;
-						imgY = this.m_location.Y;
-						imgH = this.Height;
-					}
-
-					e.Graphics.DrawImage(
-						this.m_image,
-						new Rectangle(drwX, drwY, drwW, drwH),
-						new Rectangle(imgX, imgY, imgW, imgH),
-						GraphicsUnit.Pixel
-						);
+					this.getRectangle(this.m_image, this.m_original, out dest, out src);
+					e.Graphics.DrawImage(this.m_image, dest, src, GraphicsUnit.Pixel);
 				}
 				else
 				{
-					e.Graphics.DrawImage(
-						this.m_image,
-						this.getRectangle(new Rectangle(0, 0, this.Width, this.Height)),
-						new Rectangle(
-							0,
-							0,
-							this.m_image.Width,
-							this.m_image.Height),
-						GraphicsUnit.Pixel
-						);
+					this.getRectangle(Properties.Resources.error, false, out dest, out src);
+					e.Graphics.DrawImage(Properties.Resources.error, dest, src, GraphicsUnit.Pixel);
 				}
 			}
 		}
 
-		private Rectangle getRectangle(Rectangle e)
+		private void getRectangle(Image image, bool orignalSize, out Rectangle destRect, out Rectangle srcRect)
 		{
-			double scale, scaleX, scaleY;
+			if (orignalSize)
+			{
+				int drwX, drwY, drwW, drwH;
+				int imgX, imgY, imgW, imgH;
 
-			scaleX = (double)e.Width  / (double)this.m_image.Width;
-			scaleY = (double)e.Height / (double)this.m_image.Height;
+				if (this.Width >= image.Width)
+				{
+					drwX = (this.Width - image.Width) / 2;
+					drwW = image.Width;
+					imgX = 0;
+					imgW = image.Width;
+				}
+				else
+				{
+					drwX = 0;
+					drwW = this.Width;
+					imgX = this.m_location.X;
+					imgW = this.Width;
+				}
 
-			scale = Math.Min(scaleX, scaleY);
+				if (this.Height >= image.Height)
+				{
+					drwY = (this.Height - image.Height) / 2;
+					drwH = image.Height;
+					imgY = 0;
+					imgH = image.Height;
+				}
+				else
+				{
+					drwY = 0;
+					drwH = this.Height;
+					imgY = this.m_location.Y;
+					imgH = this.Height;
+				}
 
-			if (scale > 1) scale = 1;
+				destRect = new Rectangle(drwX, drwY, drwW, drwH);
+				srcRect  = new Rectangle(imgX, imgY, imgW, imgH);
+			}
+			else
+			{
+				double scaleX = this.Width  / (double)image.Width;
+				double scaleY = this.Height / (double)image.Height;
+				double scale  = Math.Min(scaleX, scaleY);
 
-			int w = (int)Math.Ceiling(this.m_image.Width  * scale);
-			int h = (int)Math.Ceiling(this.m_image.Height * scale);
-			int x = (e.Width  - w) / 2;
-			int y = (e.Height - h) / 2;
+				if (scale > 1)
+					scale = 1;
 
-			return new Rectangle(x, y, w, h);
+				int w = (int)Math.Ceiling(image.Width  * scale);
+				int h = (int)Math.Ceiling(image.Height * scale);
+				int x = (this.Width  - w) / 2;
+				int y = (this.Height - h) / 2;
+
+				destRect = new Rectangle(x, y, w, h);
+				srcRect  = new Rectangle(0, 0, image.Width, image.Height);
+			}
 		}
 
 		protected override void OnMouseDoubleClick(MouseEventArgs e)
 		{
-			if (e.Button != System.Windows.Forms.MouseButtons.Left)
+			if (e.Button != System.Windows.Forms.MouseButtons.Left ||
+				this.m_status != Statuses.Complete)
 				return;
 
 			this.m_original = !this.m_original;
@@ -242,9 +276,9 @@ namespace Azpe.Viewer
 
 		protected override void OnMouseDown(MouseEventArgs e)
 		{
-			if (this.m_image == null) return;
-
-			if (e.Button != System.Windows.Forms.MouseButtons.Left) return;
+			if (e.Button != System.Windows.Forms.MouseButtons.Left ||
+				this.m_status != Statuses.Complete)
+				return;
 
 			this.m_move = true;
 			this.m_mouse.X = e.X;
@@ -253,10 +287,7 @@ namespace Azpe.Viewer
 
 		protected override void OnMouseMove(MouseEventArgs e)
 		{
-			if (this.m_image == null) return;
-
-			if (!this.m_move)
-				return;
+			if (this.m_status != Statuses.Complete || !this.m_move) return;
 
 			this.m_location.X += (int)((this.m_mouse.X - e.X) * 1.0d * this.m_image.Width / this.Width);
 			this.m_location.Y += (int)((this.m_mouse.Y - e.Y) * 1.0d * this.m_image.Height / this.Height);

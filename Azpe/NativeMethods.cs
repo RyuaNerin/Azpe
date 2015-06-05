@@ -18,9 +18,9 @@ namespace Azpe
 				placement.length = Marshal.SizeOf(placement);
 				if (GetWindowPlacement(hwnd, ref placement))
 				{
-					if (placement.showCmd == ShowCmds.Hide ||
-						placement.showCmd == ShowCmds.Minimized)
+					if (placement.showCmd == ShowCmds.Minimized)
 						NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
+
 					SetForegroundWindow(hwnd);
 				}
 			}
@@ -31,22 +31,21 @@ namespace Azpe
 		public static void SendData(IntPtr hwnd, string msg)
 		{
 			var buff = System.Text.Encoding.UTF8.GetBytes(msg);
+			var data = new NativeMethods.COPYDATASTRUCT();
+			data.dwData = Program.wParam;
+			data.cbData = buff.Length;
+			data.lpData = Marshal.AllocHGlobal(buff.Length);
+			Marshal.Copy(buff, 0, data.lpData, buff.Length);
 
-			var st = new NativeMethods.COPYDATASTRUCT();
-			st.dwData = Program.wParam;
-			st.cbData = buff.Length;
-			st.lpData = Marshal.AllocHGlobal(buff.Length);
-			Marshal.Copy(buff, 0, st.lpData, buff.Length);
-
-			var lParam = Marshal.AllocHGlobal(Marshal.SizeOf(st));
-			Marshal.StructureToPtr(st, lParam, true);
+			var lParam = Marshal.AllocHGlobal(Marshal.SizeOf(data));
+			Marshal.StructureToPtr(data, lParam, true);
 
 			NativeMethods.SendMessage(hwnd, NativeMethods.WM_COPYDATA, Program.wParam, lParam);
 
 			Marshal.DestroyStructure(lParam, typeof(COPYDATASTRUCT));
 			Marshal.FreeHGlobal(lParam);
 
-			Marshal.FreeHGlobal(st.lpData);
+			Marshal.FreeHGlobal(data.lpData);
 		}
 
 		#region Structure

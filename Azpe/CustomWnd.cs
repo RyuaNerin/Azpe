@@ -14,6 +14,11 @@ namespace Azpe
 
 		private static CustomProc m_custom;
 
+		~CustomWnd()
+		{
+			this.Dispose(true);
+		}
+
 		public void Dispose() 
 		{
 			this.Dispose(true);
@@ -36,10 +41,10 @@ namespace Azpe
 
 		public CustomWnd(string className, CustomProc customProc)
 		{
-			CustomWnd.m_custom = customProc;
-			this.m_wndproc = CustomWnd.WndProc;
+			CustomWnd.m_custom	= customProc;
+			this.m_wndproc		= CustomWnd.WndProc;
 
-			var wndClass = new NativeMethods.WNDCLASS();
+			var wndClass			= new NativeMethods.WNDCLASS();
 			wndClass.lpszClassName	= className;
 			wndClass.lpfnWndProc	= Marshal.GetFunctionPointerForDelegate(m_wndproc);
 
@@ -52,11 +57,6 @@ namespace Azpe
 			this.m_hwnd = NativeMethods.CreateWindowEx(0, className, String.Empty, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
 			Console.WriteLine(this.m_hwnd.ToString());
-		}
-
-		~CustomWnd()
-		{
-			this.Dispose(true);
 		}
 
 		private static IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)

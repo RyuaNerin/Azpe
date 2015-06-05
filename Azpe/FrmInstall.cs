@@ -65,7 +65,6 @@ namespace Azpe
 				}
 			}
 			
-
 			// 파일 복사			
 			string path = Path.Combine(Path.GetDirectoryName(pathAz), "scripts");
 

@@ -116,6 +116,8 @@ namespace Azpe.Viewer
 
 			this.m_lst.ForEach(e => e.Dispose());
 			this.m_lst.Clear();
+
+			this.m_pic.SetDownload(0, 0);
 			
 			this.Refresh();
 
@@ -175,7 +177,7 @@ namespace Azpe.Viewer
 							switch (cur.Status)
 							{
 								case Statuses.Download:
-									this.m_pic.SetProgress(cur.Down, cur.Total);
+									this.m_pic.SetDownload(cur.Progress, cur.Speed);
 									break;
 
 								case Statuses.Complete:
@@ -196,7 +198,7 @@ namespace Azpe.Viewer
 								case Statuses.Download:
 									this.m_pic.Visible	= true;
 									this.m_host.Visible = false;
-									this.m_pic.SetProgress(cur.Down, cur.Total);
+									this.m_pic.SetDownload(0, 0);
 									break;
 
 								case Statuses.Complete:

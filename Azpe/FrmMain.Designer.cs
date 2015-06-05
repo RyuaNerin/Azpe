@@ -57,7 +57,6 @@
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
 			this.Text = "[ 0 / 0 ] AZPreview-E";
 			this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.frmMain_FormClosing);
-			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FrmMain_FormClosed);
 			this.Shown += new System.EventHandler(this.frmMain_Shown);
 			this.ResizeEnd += new System.EventHandler(this.frmMain_ResizeEnd);
 			this.ResumeLayout(false);
