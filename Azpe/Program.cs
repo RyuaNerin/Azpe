@@ -8,7 +8,7 @@ namespace Azpe
 	{
 		public const string UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0";
 
-		public const string TagName = "v1.1.0";
+		public const string TagName = "v1.1.0.1";
 		public const string ScriptKey = "a110";
 
 		public const string lpClassName = "azpe_handler";

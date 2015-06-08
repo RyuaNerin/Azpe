@@ -19,7 +19,7 @@ else
 	var c = 2;
 	var a = 4;
 
-	System.launchApplication(path, vs + 'init', 0);
+	System.launchApplication(path, vs + 'init', 1);
 
 	System.addKeyBindingHandler('G'.charCodeAt(0), 0,
 	function(id)
@@ -49,7 +49,7 @@ else
 		}
 
 		if (arg.length > 1)
-			System.launchApplication(path, vs + (item.retweeted ? item.retweeted_id : item.id) + ',show,' + arg.substring(0, arg.length - 1), 0);
+			System.launchApplication(path, vs + (item.retweeted ? item.retweeted_id : item.id) + ',show,' + arg.substring(0, arg.length - 1), 1);
 	});
 
 	System.addKeyBindingHandler('G'.charCodeAt(0), s,
@@ -59,7 +59,7 @@ else
 
 		if (!item) return;
 
-		System.launchApplication(path, vs + item.id + 'close', 0);
+		System.launchApplication(path, vs + item.id + 'close', 1);
 	});
 
 	System.addKeyBindingHandler('G'.charCodeAt(0), a,
@@ -69,6 +69,6 @@ else
 
 		if (!item) return;
 
-		System.launchApplication(path, vs + item.id + 'top', 0);
+		System.launchApplication(path, vs + item.id + 'top', 1);
 	});
 }

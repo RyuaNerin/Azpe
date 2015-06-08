@@ -264,7 +264,7 @@ namespace Azpe.Viewer
 		{
 			cachePath = Path.Combine(Cache.CachePath, Cache.GetFileName(url));
 
-			if (File.Exists(cachePath))
+			if (File.Exists(cachePath) && new FileInfo(cachePath).Length > 0)
 			{
 				File.SetLastAccessTimeUtc(cachePath, DateTime.UtcNow);
 				return new FileStream(cachePath, FileMode.Open, FileAccess.Read);
@@ -287,8 +287,16 @@ namespace Azpe.Viewer
 
 				if (file != null)
 				{
-					using (file)
-						this.Image = Image.FromStream(file);
+					try
+					{
+						using (file)
+							this.Image = Image.FromStream(file);
+					}
+					catch
+					{
+						Cache.Remove(this.Url, null);
+						throw;
+					}
 				}
 				else
 				{
