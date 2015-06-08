@@ -1,4 +1,4 @@
-# [Azpe v1.1.0](https://github.com/RyuaNerin/Azpe/releases/latest)
+# [Azpe v1.1.0.1](https://github.com/RyuaNerin/Azpe/releases/latest)
 
 Made by [RyuaNerin](https://ryuanerin.kr/)
 
