@@ -1,20 +1,18 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Windows.Forms;
-
-using WeakRef = System.WeakReference;
 
 namespace Azpe.Viewer
 {
 	[System.ComponentModel.DesignerCategory("CODE")]
 	internal class ImageViwer : Control
 	{
-		private Statuses	m_status = Statuses.Download;
-		private Image		m_image	= null;
-		private float		m_prog	= 0f;
-		private float		m_speed = 0f;
+		private MediaTypes	m_type;
+		private Statuses	m_status	= Statuses.Download;
+		private Image		m_image		= null;
+		private float		m_prog		= 0f;
+		private float		m_speed		= 0f;
 
 		private Point		m_location	= new Point(0, 0);
 		private bool		m_original	= false;
@@ -30,15 +28,18 @@ namespace Azpe.Viewer
 		public void SetDownload(float progress, float speed)
 		{
 			this.m_status	= Statuses.Download;
-			this.m_prog		= progress;
+			this.m_prog		= progress > 1 ? 1 : progress;
 			this.m_speed	= speed;
 
 			this.Invalidate();
 		}
-		public void SetImage(Image image)
+		public void SetImage(Image image, MediaTypes type)
 		{
 			this.m_status	= Statuses.Complete;
 			this.m_image	= image;
+			this.m_type		= type;
+
+			this.CheckPosition();
 
 			this.Invalidate();
 		}
@@ -100,36 +101,26 @@ namespace Azpe.Viewer
 			}
 		}
 		
-		private static Rectangle	m_progSpeed	= new Rectangle(0, 0, 100, 10);
-		private static Rectangle	m_progRect	= new Rectangle(0, 10, 100, 10);
+		private static Size			m_progSize	= new Size(100, 10);
 		private static Pen			m_progLine	= Pens.DimGray;
 		private static Color		m_progBack0	= Color.Gainsboro;
 		private static Color		m_progBack1	= Color.LightGray;
 		private static Color		m_progProg0	= Color.LightGreen;
 		private static Color		m_progProg1	= Color.Green;
 		private static Font			m_strFont	= new Font("Consolas", 8.0f, FontStyle.Regular);
-		
-		private static StringFormat m_strFormat = new StringFormat()
-		{
-			Alignment		= StringAlignment.Center,
-			LineAlignment	= StringAlignment.Far
-		};
+		private static float		m_dia		= 8;
+		private static StringFormat m_strPers	= new StringFormat() { Alignment = StringAlignment.Near, LineAlignment = StringAlignment.Far };
+		private static StringFormat m_strSpeed	= new StringFormat() { Alignment = StringAlignment.Far,  LineAlignment = StringAlignment.Far };
 
-		private static GraphicsPath DrawArc(RectangleF rect, float dia)
+		private static GraphicsPath DrawArc(RectangleF rect)
 		{
 			GraphicsPath path = new GraphicsPath();
 
-			// top left
-			path.AddArc(new RectangleF(rect.X - dia, rect.Y, dia, dia), 180, 90);
-						
-			// top right
-			path.AddArc(new RectangleF(rect.Right + dia, rect.Y, dia, dia), 270, 90);
-
-			// bottom right
-			path.AddArc(new RectangleF(rect.Right + dia, rect.Bottom, dia, dia), 0, 90);
-
-			// bottom left
-			path.AddArc(new RectangleF(rect.X - dia, rect.Bottom, dia, dia), 90, 90);
+			//시계방향
+			path.AddArc(new RectangleF(rect.X		- m_dia / 2, rect.Y,				m_dia, m_dia), 180, 90);
+			path.AddArc(new RectangleF(rect.Right	+ m_dia / 2, rect.Y,				m_dia, m_dia), 270, 90);
+			path.AddArc(new RectangleF(rect.Right	+ m_dia / 2, rect.Bottom - m_dia,	m_dia, m_dia), 0, 90);
+			path.AddArc(new RectangleF(rect.X		- m_dia / 2, rect.Bottom - m_dia,	m_dia, m_dia), 90, 90);
 
 			path.CloseFigure();
 
@@ -156,21 +147,20 @@ namespace Azpe.Viewer
 				e.Graphics.InterpolationMode	= InterpolationMode.HighQualityBicubic;
 
 				var back = new RectangleF(
-					(this.Width  - ImageViwer.m_progRect.Width)  / 2,
-					(this.Height - ImageViwer.m_progRect.Height) / 2,
-					ImageViwer.m_progRect.Width,
-					ImageViwer.m_progRect.Height);
+					(this.Width  - ImageViwer.m_progSize.Width)  / 2,
+					(this.Height - ImageViwer.m_progSize.Height) / 2,
+					ImageViwer.m_progSize.Width,
+					ImageViwer.m_progSize.Height);
 
 				var prog = new RectangleF(
-					(this.Width  - ImageViwer.m_progRect.Width)  / 2,
-					(this.Height - ImageViwer.m_progRect.Height) / 2,
-					ImageViwer.m_progRect.Width * this.m_prog,
-					ImageViwer.m_progRect.Height);
+					(this.Width  - ImageViwer.m_progSize.Width)  / 2,
+					(this.Height - ImageViwer.m_progSize.Height) / 2,
+					ImageViwer.m_progSize.Width * this.m_prog,
+					ImageViwer.m_progSize.Height);
 
-				var dia = 4 / 2f;
 
-				using (var pathBack  = DrawArc(back, dia))
-				using (var pathProg  = DrawArc(prog, dia))
+				using (var pathBack  = DrawArc(back))
+				using (var pathProg  = DrawArc(prog))
 				using (var brushBack = new LinearGradientBrush(back, ImageViwer.m_progBack0, ImageViwer.m_progBack1, LinearGradientMode.Vertical))
 				using (var brushProg = new LinearGradientBrush(back, ImageViwer.m_progProg0, ImageViwer.m_progProg1, LinearGradientMode.Vertical))
 				{
@@ -179,13 +169,20 @@ namespace Azpe.Viewer
 					e.Graphics.DrawPath(ImageViwer.m_progLine, pathBack);
 				}
 
+				e.Graphics.DrawString(
+					string.Format("{0:##0}%", this.m_prog * 100),
+					ImageViwer.m_strFont,
+					Brushes.Black,
+					new RectangleF(back.X, back.Y - 20, back.Width, 20),
+					ImageViwer.m_strPers);
+
 				if (this.m_speed != 0)
 					e.Graphics.DrawString(
 						ImageViwer.GetSpeed(this.m_speed),
 						ImageViwer.m_strFont,
 						Brushes.Black,
 						new RectangleF(back.X, back.Y - 20, back.Width, 20),
-						ImageViwer.m_strFormat);
+						ImageViwer.m_strSpeed);
 			}
 			else
 			{

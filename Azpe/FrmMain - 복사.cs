@@ -13,7 +13,7 @@ using System.Collections.Generic;
 
 namespace Azpe
 {
-	public partial class FrmMain : Form, IMessageFilter
+	public partial class FrmMain : Form
 	{
 		private CustomWnd	m_customWnd;
 		private Process		m_azurea;
@@ -44,8 +44,6 @@ namespace Azpe
 			
 			if (Program.Arg.EndsWith("init"))
 				this.Visible = false;
-
-			Application.AddMessageFilter(this);
 		}
 
 		private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
@@ -214,6 +212,70 @@ namespace Azpe
 			}
 		}
 
+		//////////////////////////////////////////////////////////////////////////
+
+		private static Keys Le	= Keys.Left;
+		private static Keys Ri	= Keys.Right;
+		private static Keys G	= Keys.G;
+		private static Keys W	= Keys.W;
+		private static Keys Z	= Keys.Z;
+		private static Keys V	= Keys.V;
+		private static Keys Tab	= Keys.Tab;
+		private static Keys Esc	= Keys.Escape;
+		private static Keys Ent	= Keys.Enter;
+
+		private static Keys CS	= Keys.Control | Keys.S;
+		private static Keys CR	= Keys.Control | Keys.R;
+
+		private static Keys CLe	= Keys.Control | Keys.Left;
+		private static Keys CRi	= Keys.Control | Keys.Right;
+		private static Keys CUp	= Keys.Control | Keys.Up;
+		private static Keys CDo	= Keys.Control | Keys.Down;
+
+		private static Keys SLe	= Keys.Shift | Keys.Left;
+		private static Keys SRi	= Keys.Shift | Keys.Right;
+		private static Keys SUp	= Keys.Shift | Keys.Up;
+		private static Keys SDo	= Keys.Shift | Keys.Down;
+
+		private static Keys ALe	= Keys.Shift | Keys.Down;
+		private static Keys ARi	= Keys.Shift | Keys.Down;
+		private static Keys AUp	= Keys.Shift | Keys.Down;
+		private static Keys ADo	= Keys.Shift | Keys.Down;
+
+		private enum KeyStatus { None, Down, Repeat, Up }
+
+		private Dictionary<Keys, KeyStatus> m_dicKeys = new Dictionary<Keys, KeyStatus>
+		{
+			{ FrmMain.G,	KeyStatus.None },
+			{ FrmMain.W,	KeyStatus.None },
+			{ FrmMain.Z,	KeyStatus.None },
+			{ FrmMain.V,	KeyStatus.None },
+			{ FrmMain.Tab,	KeyStatus.None },
+			{ FrmMain.Esc,	KeyStatus.None },
+			{ FrmMain.Ent,	KeyStatus.None },
+			
+			{ FrmMain.CS,	KeyStatus.None },
+			{ FrmMain.CR,	KeyStatus.None },
+			
+			{ FrmMain.Le,	KeyStatus.None },
+			{ FrmMain.Ri,	KeyStatus.None },
+
+			{ FrmMain.CLe,	KeyStatus.None },
+			{ FrmMain.CRi,	KeyStatus.None },
+			{ FrmMain.CUp,	KeyStatus.None },
+			{ FrmMain.CDo,	KeyStatus.None },
+
+			{ FrmMain.ALe,	KeyStatus.None },
+			{ FrmMain.ARi,	KeyStatus.None },
+			{ FrmMain.AUp,	KeyStatus.None },
+			{ FrmMain.ADo,	KeyStatus.None },
+
+			{ FrmMain.SLe,	KeyStatus.None },
+			{ FrmMain.SRi,	KeyStatus.None },
+			{ FrmMain.SUp,	KeyStatus.None },
+			{ FrmMain.SDo,	KeyStatus.None },
+		};
+
 		private const int WM_KEYDOWN = 0x100;
 		private const int WM_KEYUP = 0x101;
 		private const int WM_SYSKEYDOWN = 0x104;
@@ -221,17 +283,52 @@ namespace Azpe
 		private int		m_move;
 		private int		m_xMin, m_xMax;
 		private int		m_yMin, m_yMax;
-		private bool	m_keyRepeat;
-
-		public bool PreFilterMessage(ref Message m)
-		{
-			if (m.Msg == FrmMain.WM_KEYUP)
-				this.m_keyRepeat = false;
-			return false;
-		}
-
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
+			if (this.m_dicKeys.ContainsKey(keyData))
+			{
+				if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
+				{
+					if (this.m_dicKeys[keyData] == KeyStatus.None)
+						this.m_dicKeys[keyData]  = KeyStatus.Down;
+
+					else
+					if (this.m_dicKeys[keyData] == KeyStatus.Down)
+						this.m_dicKeys[keyData]  = KeyStatus.Repeat;
+				}
+				else
+				{
+					this.m_dicKeys[keyData] = KeyStatus.Up;
+				}
+
+				this.KeyEvent();
+
+				foreach (var key in this.m_dicKeys.Keys)
+					if (this.m_dicKeys[key] == KeyStatus.Up)
+						this.m_dicKeys[key]  = KeyStatus.None;
+
+				return true;
+			}
+
+			return base.ProcessCmdKey(ref msg, keyData);
+		}
+
+		private void KeyEvent()
+		{
+			bool first = this.m_dicKeys.Count(e => e.Value != KeyStatus.None) == 1;
+
+			if (this.m_dicKeys[FrmMain.Le] != KeyStatus.None) this.m_viewer.CurrentIndex--;
+			if (this.m_dicKeys[FrmMain.Ri] != KeyStatus.None) this.m_viewer.CurrentIndex++;
+
+			if (this.m_dicKeys[FrmMain.CLe] != KeyStatus.None) this.m_viewer.ImageMove(-1, 0);
+			if (this.m_dicKeys[FrmMain.CRi] != KeyStatus.None) this.m_viewer.ImageMove( 1, 0);
+			if (this.m_dicKeys[FrmMain.CUp] != KeyStatus.None) this.m_viewer.ImageMove(0, -1);
+			if (this.m_dicKeys[FrmMain.CDo] != KeyStatus.None) this.m_viewer.ImageMove(0,  1);
+
+
+			if (this.m_dicKeys[FrmMain.CDo] != KeyStatus.None) this.m_viewer.ImageMove(0, 1);
+
+			/*
 			switch (keyData)
 			{
 				case Keys.Left:		this.m_viewer.CurrentIndex--;	return true;
@@ -415,7 +512,7 @@ namespace Azpe
 						}
 					}
 					return true;
-					
+
 				case Keys.Control | Keys.R:
 					this.m_viewer.DownloadImage();
 					return true;
@@ -443,7 +540,6 @@ namespace Azpe
 
 				case Keys.Escape:
 				case Keys.Enter:
-				case Keys.Control | Keys.W:
 					this.Hide();
 					return true;
 
@@ -453,11 +549,18 @@ namespace Azpe
 			}
 
 			return base.ProcessCmdKey(ref msg, keyData);
+			 * */
 		}
 
 		private void GoBrowser()
 		{
-			Process.Start(this.m_viewer.Current.OrigUrl);
+			try
+			{
+				Process.Start(this.m_viewer.Current.OrigUrl);
+			}
+			catch
+			{
+			}
 		}
 
 		private void frmMain_ResizeEnd(object sender, EventArgs e)

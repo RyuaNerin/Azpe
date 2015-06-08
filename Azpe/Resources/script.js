@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////
 // 
-// AZPreivewE (based AZPreview made by @Gisuksagi)
+// Azpe (based AZPreview made by @Gisuksagi)
 // By RyuaNerin <admin@ryuanerin.kr>
 //
 ////////////////////////////////////////////////////////////
@@ -13,7 +13,7 @@ else
 {
 	var path = System.applicationPath.replace(/[^\.\\]+\.exe/, '') + 'scripts\\azpe.js.Private\\azpe.exe';
 
-	var vs = 'a100';
+	var vs = 'a110';
 
 	var s = 1;
 	var c = 2;
@@ -26,8 +26,7 @@ else
 	{
 		var item = TwitterService.status.get(id);
 
-		if (!item)
-			return;
+		if (!item) return;
 
 		var arg = "";
 
@@ -42,25 +41,34 @@ else
 		{
 			var i = 0;
 			while (i < item.entities.urls.length)
-				arg += item.entities.urls[i++].expanded_url + ',';
+			{
+				var url = item.entities.urls[i++].expanded_url;
+				if (!url.match('twitter\\.com/[a-zA-Z0-9_]+/status/\\d+'))
+					arg += url + ',';
+			}
 		}
-	
-		if (arg.length > 0)
-			System.launchApplication(path, vs + arg.substring(0, arg.length - 1), 0);
 
-		else
-			System.launchApplication(path, vs + 'focus', 0);
+		if (arg.length > 1)
+			System.launchApplication(path, vs + (item.retweeted ? item.retweeted_id : item.id) + ',show,' + arg.substring(0, arg.length - 1), 0);
 	});
 
 	System.addKeyBindingHandler('G'.charCodeAt(0), s,
-	function()
+	function(id)
 	{
-		System.launchApplication(path, vs + 'hide', 0);
+		var item = TwitterService.status.get(id);
+
+		if (!item) return;
+
+		System.launchApplication(path, vs + item.id + 'close', 0);
 	});
 
 	System.addKeyBindingHandler('G'.charCodeAt(0), a,
-	function()
+	function ()
 	{
-		System.launchApplication(path, vs + 'top', 0);
+		var item = TwitterService.status.get(id);
+
+		if (!item) return;
+
+		System.launchApplication(path, vs + item.id + 'top', 0);
 	});
 }

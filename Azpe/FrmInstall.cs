@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Azpe
@@ -12,20 +13,20 @@ namespace Azpe
 		{
 			InitializeComponent();
 
-			this.Text = string.Format("{0} 설치", Program.ProgramName);
+			this.lblVersion.Text = Program.TagName;
 		}
 
 		private void btnInstall_Click(object sender, EventArgs e)
 		{
 			this.btnInstall.Enabled = false;
+			this.btnInstall.Text = "설치중입니다";
 
-			this.Install();
-
-			this.btnInstall.Enabled = true;
+			this.bgw.RunWorkerAsync();
 		}
-		
-		private void Install()
+
+		private void bgw_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
 		{
+
 			IntPtr	hwnd;
 			int		pid;
 
@@ -34,37 +35,59 @@ namespace Azpe
 				NativeMethods.GetWindowThreadProcessId(hwnd, out pid) == 0 ||
 				pid == 0)
 			{
-				MessageBox.Show(this, "아즈레아를 실행해주세요!", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+				this.Invoke(new Action(() => MessageBox.Show(this, "아즈레아를 실행해주세요!", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Error)));
 				return;
 			}
-			
-			Process procAz = Process.GetProcessById(pid);
 
-			string pathAz = procAz.MainModule.FileName;
+			string pathAz;
+			using (var procAz = Process.GetProcessById(pid))
+			{
+				pathAz = procAz.MainModule.FileName;
 
-			if (MessageBox.Show(this, "설치를 위해 아즈레아를 종료합니다!", this.Text, MessageBoxButtons.OKCancel) == DialogResult.Cancel)
-				return;
+				if ((bool)this.Invoke(new Func<bool>(() => MessageBox.Show(this, "설치를 위해 아즈레아를 종료합니다!", this.Text, MessageBoxButtons.OKCancel) == DialogResult.Cancel)))
+					return;
 
-			// 아즈레아 종료
-			// public const int WM_SYSCOMMAND = 0x0112;
-			// public const int SC_CLOSE = 0xF060;
-			NativeMethods.SendMessage(hwnd, 0x0112, (IntPtr)0xF060, IntPtr.Zero);
-			procAz.WaitForExit();
-			
-			// azpe 가 이미 동작중인가 체크
+				// 아즈레아 종료
+				// public const int WM_SYSCOMMAND = 0x0112;
+				// public const int SC_CLOSE = 0xF060;
+				NativeMethods.SendMessage(hwnd, 0x0112, (IntPtr)0xF060, IntPtr.Zero);
+				procAz.WaitForExit();
+			}
+
+			// azpe 에 종료 신호를 보낸다
 			hwnd = NativeMethods.FindWindow(Program.lpClassName, null);
 			if (hwnd != IntPtr.Zero)
 			{
 				NativeMethods.SendData(hwnd, "exit");
 
-				if (NativeMethods.GetWindowThreadProcessId(hwnd, out pid) != 0)
+				Thread.Sleep(1000);
+			}
+
+			// azpe 찾는다
+			var procs = Process.GetProcesses();
+			try
+			{
+				foreach (var proc in procs)
 				{
-					Process proc = Process.GetProcessById(pid);
-					proc.Kill();
-					proc.WaitForExit();
+					if (Path.GetFileName(proc.MainModule.FileName) == "azpe.exe" &&
+					Path.GetFileName(Path.GetDirectoryName(proc.MainModule.FileName)) == "azpe.js.Private" &&
+					Path.GetFileName(Path.GetDirectoryName(Path.GetDirectoryName(proc.MainModule.FileName))) == "scripts")
+					{
+						proc.Kill();
+						proc.WaitForExit();
+					}
 				}
 			}
-			
+			catch
+			{
+			}
+			finally
+			{
+				foreach (var proc in procs)
+					proc.Dispose();
+				procs = null;
+			}
+
 			// 파일 복사			
 			string path = Path.Combine(Path.GetDirectoryName(pathAz), "scripts");
 
@@ -81,19 +104,28 @@ namespace Azpe
 			path = Path.Combine(path, "azpe.exe");
 			if (File.Exists(path))
 				File.Delete(path);
-			
+
 			File.Copy(Application.ExecutablePath, path);
-			
+
 			// 스크립트 활성화
 			NativeMethods.WritePrivateProfileString("Scripting", "EnableScripting", "1", Path.Combine(pathAz, "Azurea.ini8"));
-			
+
 			//////////////////////////////////////////////////////////////////////////
 
-			MessageBox.Show(this, "설치가 끝났어요!\n아즈레아를 재실행합니다!", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+			this.Invoke(new Action(() => MessageBox.Show(this, "설치가 끝났어요!\n아즈레아를 재실행합니다!", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)));
 
 			Process.Start(pathAz);
 
-			this.Close();
+			e.Result = 0;
+		}
+
+		private void bgw_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+		{
+			if (e.Result is int)
+				Application.Exit();
+
+			this.btnInstall.Text = "설치";
+			this.btnInstall.Enabled = true;
 		}
 	}
 }

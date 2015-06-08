@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 
 namespace Azpe.Viewer
 {
-	public enum MediaTypes	: byte { Image,		Video,		VideoThumb	}
-	public enum Statuses	: byte { Download,	Complete,	Error		}
+	public enum MediaTypes	: byte { Image,		Video,		VideoThumb, PageThumb	}
+	public enum Statuses	: byte { Download,	Complete,	Error }
 
 	public class MediaInfo : IDisposable
 	{
-		private AzpViewer	m_parent;
+		private FrmViewer	m_parent;
 		private int			m_index;
 
 		private WebClient	m_web;
@@ -34,45 +34,47 @@ namespace Azpe.Viewer
 		private MediaInfo()
 		{
 			this.m_web = new WebClient();
-			this.m_web.DownloadFileCompleted += DownloadFileCompleted;
-			this.m_web.DownloadProgressChanged += DownloadProgressChanged;
+			this.m_web.DownloadFileCompleted	+= DownloadFileCompleted;
+			this.m_web.DownloadProgressChanged	+= DownloadProgressChanged;
 		}
 
 		private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
 		{
-			DateTime dt = DateTime.UtcNow;
-			TimeSpan ts = dt - this.m_date;
-
-			if (this.m_down2 == 0)
+			lock (this.m_web)
 			{
-				this.Speed		= e.BytesReceived / (float)ts.TotalSeconds;
+				DateTime dt = DateTime.UtcNow;
+				TimeSpan ts = dt - this.m_date;
 
-				this.m_date		= dt;
-				this.m_down2	= e.BytesReceived;
-			}
-			else if (ts.TotalMilliseconds > 250)
-			{
-				this.m_speed2	= (this.m_down2 - e.BytesReceived) / (float)ts.TotalSeconds;
-				this.Speed		= (this.Speed + this.m_down2) / 2;
+				if (this.m_down2 == 0)
+				{
+					this.Speed		= e.BytesReceived / (float)ts.TotalSeconds;
 
-				this.m_date		= dt;
-				this.m_down2	= e.BytesReceived;
+					this.m_date		= dt;
+					this.m_down2	= e.BytesReceived;
+				}
+				else if (ts.TotalMilliseconds > 250)
+				{
+					this.m_speed2	= (e.BytesReceived - this.m_down2) / (float)ts.TotalSeconds;
+					this.Speed		= (this.Speed * 3 + this.m_speed2) / 4;
+
+					this.m_date		= dt;
+					this.m_down2	= e.BytesReceived;
+				}
 			}
 
 			this.Progress = e.TotalBytesToReceive == 0 ? 0 : e.BytesReceived / (float)e.TotalBytesToReceive;
 
-			this.Refresh();
+			this.RefreshItem();
 		}
 
 		private void DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
 		{
 			if (e.Error != null)
 			{
-				File.Delete(this.m_temp);
-				Settings.DelCacheFile((string)e.UserState, null);
+				Cache.Remove((string)e.UserState, null);
 
 				this.Status = Statuses.Error;
-				this.Refresh();
+				this.RefreshItem();
 			}
 		}
 
@@ -102,40 +104,45 @@ namespace Azpe.Viewer
 
 				if (this.m_web != null)
 				{
-					this.m_web.CancelAsync();
+					if (this.m_web.IsBusy)
+					{
+						this.m_web.CancelAsync();
+						while (this.m_web.IsBusy)
+							Thread.Sleep(250);
+					}
 					this.m_web.Dispose();
 				}
 			}
 		}
 
-		public static MediaInfo Create(AzpViewer parent, string url, int index)
+		public static MediaInfo Create(string url, int index)
 		{
 			MediaTypes	mediaType;
-			string		urlFixed;
-
-			urlFixed = MediaInfo.FixUrl(url, out mediaType);
+			string		urlFixed = MediaInfo.FixUrl(url, out mediaType);
 
 			if (urlFixed == null)
 				return null;
 
 			var media = new MediaInfo();
 
-			media.m_parent	= parent;
 			media.m_index	= index;
 
 			media.OrigUrl	= url;
 			media.Url		= MediaInfo.FixUrl(url, out mediaType);
 			media.MediaType	= mediaType;
 
-			media.StartDownload();
-
 			return media;
 		}
 
-		public void Refresh()
+		public void SetParent(FrmViewer parent)
+		{
+			this.m_parent = parent;
+		}
+
+		public void RefreshItem()
 		{
 			if (!this.m_disposed && this.m_parent.CurrentIndex == this.m_index)
-				this.m_parent.Refresh();
+				this.m_parent.RefreshItem();
 		}
 
 		public void StartDownload()
@@ -144,14 +151,14 @@ namespace Azpe.Viewer
 
 			try
 			{
-				File.Delete(this.CachePath);
+				File.Delete(this.m_temp);
 			}
 			catch
 			{ }
 
 			new Task(this.Download).Start();
 
-			this.Refresh();
+			this.RefreshItem();
 		}
 		
 		private static RegexOptions regRules = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
@@ -166,6 +173,12 @@ namespace Azpe.Viewer
 			{
 				mediaType = MediaTypes.Video;
 				return url.Replace("tweet_video_thumb", "tweet_video").Replace(".png", ".mp4");
+			}
+
+			if (url.Contains("ext_tw_video"))
+			{
+				mediaType = MediaTypes.VideoThumb;
+				return url.EndsWith(":orig") ? url : url + ":orig";
 			}
 
 			if (url.Contains("pbs.twimg.com"))
@@ -214,23 +227,8 @@ namespace Azpe.Viewer
 				return url;
 			}
 
-			return null;
-		}
-
-		private static char[] InvalidChars = Path.GetInvalidFileNameChars();
-		private static Stream GetCache(string url, out string path)
-		{
-			path = Path.Combine(Program.CacheDir, Settings.getCacheFileName(url));
-
-			if (File.Exists(path))
-			{
-				File.SetLastAccessTimeUtc(path, DateTime.UtcNow);
-				return new FileStream(path, FileMode.Open, FileAccess.Read);
-			}
-			else
-			{
-				return null;
-			}
+			mediaType = MediaTypes.PageThumb;
+			return url;
 		}
 
 		private void Download()
@@ -238,21 +236,47 @@ namespace Azpe.Viewer
 			int retry = 3;
 			do
 			{
-				if (this.MediaType != MediaTypes.Video)
-					this.DownloadImageDo();
+				switch (this.MediaType)
+				{
+					case MediaTypes.PageThumb:
+						this.GetPageThumb();
+						break;
 
-				else if (this.MediaType == MediaTypes.Video)
-					this.GetLinkVideo();
+					case MediaTypes.Video:
+						this.GetVideo();
+						break;
 
-				else
-					this.Status = Statuses.Complete;
-				
+					default:
+						this.GetImage();
+						break;
+				}
+
 			} while (--retry > 0 && this.Status == Statuses.Error);
-						
-			this.Refresh();
+
+			if (this.Status == Statuses.Complete)
+				this.m_web.Dispose();
+
+			this.RefreshItem();
 		}
 
-		private void DownloadImageDo()
+		private static char[] InvalidChars = Path.GetInvalidFileNameChars();
+		private static Stream GetCache(string url, out string cachePath)
+		{
+			cachePath = Path.Combine(Cache.CachePath, Cache.GetFileName(url));
+
+			if (File.Exists(cachePath))
+			{
+				File.SetLastAccessTimeUtc(cachePath, DateTime.UtcNow);
+				return new FileStream(cachePath, FileMode.Open, FileAccess.Read);
+			}
+			else
+			{
+				Cache.Remove(url, null);
+				return null;
+			}
+		}
+
+		private void GetImage()
 		{
 			try
 			{
@@ -268,8 +292,8 @@ namespace Azpe.Viewer
 				}
 				else
 				{
-					if (!Directory.Exists(Program.CacheDir))
-						Directory.CreateDirectory(Program.CacheDir);
+					if (!Directory.Exists(Cache.CachePath))
+						Directory.CreateDirectory(Cache.CachePath);
 
 					this.m_temp = cachePath + ".tmp";
 
@@ -292,12 +316,10 @@ namespace Azpe.Viewer
 			{
 				this.Status = Statuses.Error;
 			}
-
-			this.Refresh();
 		}
 		
 		private static Regex regVineMp4 = new Regex("<video src=\"([^\"])\">", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-		private void GetLinkVideo()
+		private void GetVideo()
 		{
 			if (this.OrigUrl.Contains("vine.co/v/"))
 			{
@@ -326,8 +348,45 @@ namespace Azpe.Viewer
 					this.Status = Statuses.Error;
 				}
 			}
+			else
+			{
+				this.Status = Statuses.Complete;
+			}
+		}
 
-			this.Status = Statuses.Complete;
+		private void GetPageThumb()
+		{
+			try
+			{
+				var req = HttpWebRequest.Create(this.Url) as HttpWebRequest;
+				req.UserAgent = Program.UserAgent;
+				req.Method = "HEAD";
+				using (var res = req.GetResponse())
+				{
+					string type = res.Headers["content-type"];
+
+					if (type.StartsWith("image/"))
+						this.MediaType = MediaTypes.Image;
+
+					res.Close();
+				}
+			}
+			catch
+			{
+				this.MediaType = MediaTypes.PageThumb;
+			}
+
+			Image img = WebThumbnail.GetWebThumbnail(this.Url);
+
+			if (img != null)
+			{
+				this.Image = img;
+				this.Status = Statuses.Complete;
+			}
+			else
+			{
+				this.Status = Statuses.Error;
+			}
 		}
 	}
 }

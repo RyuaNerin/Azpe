@@ -4,21 +4,18 @@ using System.Windows.Forms;
 
 namespace Azpe
 {
-	static class Program
+	internal static class Program
 	{
 		public const string UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0";
 
-		public const string TagName = "v1.0.3.1";
-		public const string ScriptKey = "a100";
+		public const string TagName = "v1.1.0";
+		public const string ScriptKey = "a110";
 
 		public const string lpClassName = "azpe_handler";
-		public const string ProgramName = "Azpe";
 		
-		public static string Arg;
 		public static string ExePath;
-		public static string CacheDir;
 
-		public static IntPtr wParam = new IntPtr(26996);
+		public static readonly IntPtr wParam = new IntPtr(26996);
 
 		[STAThread]
 		static void Main(string[] args)
@@ -39,32 +36,22 @@ namespace Azpe
 					return;
 				}
 
-				if (args[0].EndsWith("exit"))
-					return;
+				Program.ExePath = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
 
-				Program.Arg			= args[0];
-				Program.ExePath		= Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
-				Program.CacheDir	= Path.Combine(Program.ExePath, "Cache");
-
-				FrmMain form;
+				Cache.Init();
+				Settings.Init();
 
 				try
 				{
-					form = new FrmMain();
+					Handler.Init(args.Length > 0 ? args[0] : null);	
 				}
 				catch
 				{
 					return;
 				}
 
-				Settings.Load(form);
-				
-				if (Program.Arg.EndsWith("init"))
-					Application.Run();
-				else
-					Application.Run(form);
+				Application.Run();
 			}
-
 		}
 	}
 }

@@ -30,11 +30,13 @@
 		{
 			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmInstall));
 			this.btnInstall = new System.Windows.Forms.Button();
+			this.bgw = new System.ComponentModel.BackgroundWorker();
+			this.lblVersion = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// btnInstall
 			// 
-			this.btnInstall.Location = new System.Drawing.Point(12, 15);
+			this.btnInstall.Location = new System.Drawing.Point(12, 13);
 			this.btnInstall.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
 			this.btnInstall.Name = "btnInstall";
 			this.btnInstall.Size = new System.Drawing.Size(120, 34);
@@ -43,11 +45,26 @@
 			this.btnInstall.UseVisualStyleBackColor = true;
 			this.btnInstall.Click += new System.EventHandler(this.btnInstall_Click);
 			// 
-			// frmInstall
+			// bgw
+			// 
+			this.bgw.DoWork += new System.ComponentModel.DoWorkEventHandler(this.bgw_DoWork);
+			this.bgw.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.bgw_RunWorkerCompleted);
+			// 
+			// lblVersion
+			// 
+			this.lblVersion.Location = new System.Drawing.Point(12, 51);
+			this.lblVersion.Name = "lblVersion";
+			this.lblVersion.Size = new System.Drawing.Size(120, 16);
+			this.lblVersion.TabIndex = 1;
+			this.lblVersion.Text = "v1.1.0";
+			this.lblVersion.TextAlign = System.Drawing.ContentAlignment.TopRight;
+			// 
+			// FrmInstall
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(144, 62);
+			this.ClientSize = new System.Drawing.Size(144, 76);
+			this.Controls.Add(this.lblVersion);
 			this.Controls.Add(this.btnInstall);
 			this.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -55,9 +72,9 @@
 			this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.Name = "frmInstall";
+			this.Name = "FrmInstall";
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-			this.Text = "frmInstall";
+			this.Text = "Azpe 설치";
 			this.ResumeLayout(false);
 
 		}
@@ -65,5 +82,7 @@
 		#endregion
 
 		private System.Windows.Forms.Button btnInstall;
+		private System.ComponentModel.BackgroundWorker bgw;
+		private System.Windows.Forms.Label lblVersion;
 	}
 }

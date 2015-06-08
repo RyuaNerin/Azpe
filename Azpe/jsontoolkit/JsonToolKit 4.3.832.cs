@@ -954,8 +954,8 @@ namespace ComputerBeacon.Json
 
                 writeEscapedString(sb, kvp.Key);
                 sb.Append(':');
-                if (kvp.Value is JsonObject) stringify(kvp.Value as JsonObject, sb, depth + 1, niceFormat);
-                else if (kvp.Value is JsonArray) stringify(kvp.Value as JsonArray, sb, depth + 1, niceFormat);
+                if (kvp.Value is JsonObject) stringify(kvp.Value as JsonObject, sb, depth, niceFormat);
+                else if (kvp.Value is JsonArray) stringify(kvp.Value as JsonArray, sb, depth, niceFormat);
                 else writeValue(sb, kvp.Value);
 
                 firstValue = true;
@@ -975,8 +975,8 @@ namespace ComputerBeacon.Json
 
                 if (niceFormat) appendIndent(sb, depth);
 
-                if (ja[i] is JsonObject) stringify(ja[i] as JsonObject, sb, depth + 1, niceFormat);
-                else if (ja[i] is JsonArray) stringify(ja[i] as JsonArray, sb, depth + 1, niceFormat);
+                if (ja[i] is JsonObject) stringify(ja[i] as JsonObject, sb, depth, niceFormat);
+                else if (ja[i] is JsonArray) stringify(ja[i] as JsonArray, sb, depth, niceFormat);
                 else writeValue(sb, ja[i]);
             }
 

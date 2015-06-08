@@ -70,6 +70,15 @@
   <PropertyGroup>
     <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>Azpe.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DelaySign>false</DelaySign>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
@@ -85,19 +94,20 @@
     <Reference Include="WindowsFormsIntegration" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cache.cs" />
+    <Compile Include="Viewer\WebThumbnail.cs" />
     <Compile Include="FrmInstall.Designer.cs">
       <DependentUpon>FrmInstall.cs</DependentUpon>
     </Compile>
-    <Compile Include="Viewer\AzpViewer.cs" />
     <Compile Include="FrmInstall.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="CustomWnd.cs" />
-    <Compile Include="FrmMain.cs">
+    <Compile Include="Handler.cs" />
+    <Compile Include="FrmViewer.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="FrmMain.Designer.cs">
-      <DependentUpon>FrmMain.cs</DependentUpon>
+    <Compile Include="FrmViewer.Designer.cs">
+      <DependentUpon>FrmViewer.cs</DependentUpon>
     </Compile>
     <Compile Include="jsontoolkit\JsonToolKit 4.3.832.cs" />
     <Compile Include="Viewer\MediaInfo.cs" />
@@ -112,8 +122,8 @@
     <EmbeddedResource Include="FrmInstall.resx">
       <DependentUpon>FrmInstall.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="FrmMain.resx">
-      <DependentUpon>FrmMain.cs</DependentUpon>
+    <EmbeddedResource Include="FrmViewer.resx">
+      <DependentUpon>FrmViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -127,7 +137,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="icon.ico" />
+    <None Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="Viewer\VideoViewer.xaml">
@@ -137,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="jsontoolkit\LICENSE.txt" />
+    <None Include="Azpe.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Resources\script.js" />
   </ItemGroup>
