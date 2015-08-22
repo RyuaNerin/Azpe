@@ -12,45 +12,42 @@ namespace Azpe
 	{
 		public static void FocusWindow(IntPtr hwnd)
 		{
-			try
-			{
-				WINDOWPLACEMENT placement = new WINDOWPLACEMENT();
-				placement.length = Marshal.SizeOf(placement);
-				if (GetWindowPlacement(hwnd, ref placement))
-				{
-					if (placement.showCmd == ShowCmds.Minimized)
-						NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
-
-					SetForegroundWindow(hwnd);
-				}
-			}
-			catch
-			{ }
 		}
 		
 		public static void SendData(IntPtr hwnd, string msg)
 		{
-			var buff = System.Text.Encoding.UTF8.GetBytes(msg);
-			var data = new NativeMethods.COPYDATASTRUCT();
-			data.dwData = Program.wParam;
-			data.cbData = buff.Length;
-			data.lpData = Marshal.AllocHGlobal(buff.Length);
-			Marshal.Copy(buff, 0, data.lpData, buff.Length);
+			byte[]	buff = System.Text.Encoding.UTF8.GetBytes(msg);
+			IntPtr	lParam = IntPtr.Zero;
+			IntPtr	lpData = IntPtr.Zero;
 
-			var lParam = Marshal.AllocHGlobal(Marshal.SizeOf(data));
-			Marshal.StructureToPtr(data, lParam, true);
+			try
+			{
+				lpData = Marshal.AllocHGlobal(buff.Length);
+				Marshal.Copy(buff, 0, lpData, buff.Length);
 
-			NativeMethods.SendMessage(hwnd, NativeMethods.WM_COPYDATA, Program.wParam, lParam);
+				lParam = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(NativeMethods.COPYDATASTRUCT)));
+				var data = new COPYDATASTRUCT();
+				data.dwData = Program.wParam;
+				data.cbData = buff.Length;
+				data.lpData = lpData;
 
-			Marshal.DestroyStructure(lParam, typeof(COPYDATASTRUCT));
-			Marshal.FreeHGlobal(lParam);
+				Marshal.StructureToPtr(data, lParam, true);
 
-			Marshal.FreeHGlobal(data.lpData);
+				NativeMethods.SendMessage(hwnd, WM_COPYDATA, Program.wParam, lParam);
+			}
+			catch
+			{
+			}
+			finally
+			{
+				if (lParam != IntPtr.Zero) Marshal.FreeHGlobal(lParam);
+				if (lpData != IntPtr.Zero) Marshal.FreeHGlobal(lpData);
+			}
 		}
 
 		#region Structure
 		[StructLayout(LayoutKind.Sequential)]
-		private struct WINDOWPLACEMENT
+		public struct WINDOWPLACEMENT
 		{
 			public int		length;
 			public int		flags;
@@ -85,7 +82,7 @@ namespace Azpe
 		#endregion
 
 		#region Enum
-		private enum ShowCmds : int
+		public enum ShowCmds : int
 		{
 			Hide = 0,
 			Normal = 1,
@@ -97,9 +94,9 @@ namespace Azpe
 		#region Constant
 		public  const int WM_COPYDATA = 0x4A;
 		public  const int ERROR_CLASS_ALREADY_EXISTS = 1410;
+		public  const int SW_RESTORE = 9;
 		private const int SW_SHOWNORMAL = 1;
 		private const int SW_SHOWMAXIMIZED = 3;
-		private const int SW_RESTORE = 9;
 		#endregion
 
 		#region Function
@@ -116,7 +113,7 @@ namespace Azpe
 			[Out] out int lpdwProcessId);
 
 		[DllImport("user32.dll", SetLastError = true)]
-		private static extern bool GetWindowPlacement(
+		public static extern bool GetWindowPlacement(
 			IntPtr	hWnd,
 			ref WINDOWPLACEMENT lpwndpl);
 
@@ -128,7 +125,7 @@ namespace Azpe
 			IntPtr	lParam);
 
 		[DllImport("user32.dll")]
-		private static extern bool SetForegroundWindow(
+		public static extern bool SetForegroundWindow(
 			IntPtr	hWnd);
 
 		[DllImport("user32.dll", CharSet = CharSet.Unicode)]
@@ -137,7 +134,7 @@ namespace Azpe
 			string	lpWindowName);
 		
 		[DllImport("user32.dll")]
-		private static extern bool ShowWindow(
+		public static extern bool ShowWindow(
 			IntPtr	hWnd,
 			int		nCmdShow);
 

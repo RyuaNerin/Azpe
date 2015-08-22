@@ -48,7 +48,7 @@ namespace Azpe.Viewer
 					DateTime start = DateTime.UtcNow;
 					web.Navigate(m_url);
 
-					while (web.ReadyState != WebBrowserReadyState.Complete && (DateTime.UtcNow -start).TotalSeconds < 30)
+					while ((web.ReadyState != WebBrowserReadyState.Complete && (DateTime.UtcNow -start).TotalSeconds < 10))
 						Application.DoEvents();
 
 					int w, h;
@@ -74,8 +74,6 @@ namespace Azpe.Viewer
 						h = Math.Min(web.Document.Body.ClientRectangle.Height, hm);
 					}
 
-					//br.Width  = w;
-					//br.Height = h;
 					web.ClientSize = new Size(w, h);
 
 					m_img = new Bitmap(w, h, PixelFormat.Format24bppRgb);
@@ -85,7 +83,10 @@ namespace Azpe.Viewer
 			catch
 			{
 				if (this.m_img != null)
+				{
 					this.m_img.Dispose();
+					this.m_img = null;
+				}
 			}
 		}
 	}

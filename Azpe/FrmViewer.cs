@@ -26,13 +26,10 @@ namespace Azpe
 				string url = ss[i];
 				if (Uri.TryCreate(url, UriKind.Absolute, out uri))
 				{
-					if (!lstUrl.Contains(url))
+					if (!lstUrl.Contains(url.Replace("https", "http")))
 					{
-						lstUrl.Add(url);
-
-						var info = MediaInfo.Create(url, index++);
-						if (info != null)
-							lstInfo.Add(info);
+						lstUrl.Add(url.Replace("https", "http"));
+						lstInfo.Add(new MediaInfo(url, index++));
 					}
 				}
 			}
@@ -45,7 +42,7 @@ namespace Azpe
 		private int				m_indexBef = -1;
 		private bool			m_containsVideo;
 
-		private ImageViwer		m_pic;
+		private ImageViewer		m_pic;
 		private ElementHost		m_host;
 		private VideoViewer		m_media;
 
@@ -60,7 +57,7 @@ namespace Azpe
 						
 			this.SuspendLayout();
 
-			this.m_pic			= new ImageViwer();
+			this.m_pic			= new ImageViewer();
 			this.m_pic.Dock		= DockStyle.Fill;
 			this.m_pic.Visible	= false;
 			this.Controls.Add(this.m_pic);
@@ -83,6 +80,14 @@ namespace Azpe
 			if (Settings.Top != -1)		this.Top	= Settings.Top;
 			if (Settings.Width != -1)	this.Width	= Settings.Width;
 			if (Settings.Height != -1)	this.Height	= Settings.Height;
+		}
+
+		public new void Activate()
+		{
+			if (this.WindowState == FormWindowState.Minimized)
+				this.WindowState = FormWindowState.Normal;
+			base.Activate();
+			NativeMethods.SetForegroundWindow(this.Handle);
 		}
 
 		protected override void Dispose(bool disposing)
@@ -516,7 +521,7 @@ namespace Azpe
 					
 				case Keys.G:
 				case Keys.Tab:
-					NativeMethods.FocusWindow(NativeMethods.FindWindow("Azurea_TwitterClient", null));
+					Handler.ActivateAzurea();
 					return true;
 
 				case Keys.Shift | Keys.Tab:

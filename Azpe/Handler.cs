@@ -34,7 +34,7 @@ namespace Azpe
 		private static IntPtr	m_azHwnd;
 		private static AzWindow	m_az;
 		private static Process	m_azProcess;
-		
+
 		public static void Destroy()
 		{
 			if (Handler.m_winHwnd != IntPtr.Zero)
@@ -287,6 +287,24 @@ namespace Azpe
 
 				GC.Collect();
 			}
+		}
+
+		public static void ActivateAzurea()
+		{
+			try
+			{
+				var placement = new NativeMethods.WINDOWPLACEMENT();
+				placement.length = Marshal.SizeOf(placement);
+				if (NativeMethods.GetWindowPlacement(Handler.m_azHwnd, ref placement))
+				{
+					if (placement.showCmd == NativeMethods.ShowCmds.Minimized)
+						NativeMethods.ShowWindow(Handler.m_azHwnd, NativeMethods.SW_RESTORE);
+
+					NativeMethods.SetForegroundWindow(Handler.m_azHwnd);
+				}
+			}
+			catch
+			{ }
 		}
 	}
 }

@@ -1,4 +1,4 @@
-# [Azpe v1.1.0.1](https://github.com/RyuaNerin/Azpe/releases/latest)
+# [Azpe v1.1.1](https://github.com/RyuaNerin/Azpe/releases/latest)
 
 Made by [RyuaNerin](https://ryuanerin.kr/)
 
@@ -11,7 +11,7 @@ Made by [RyuaNerin](https://ryuanerin.kr/)
  * 트위터 동영상으로 변환된 gif 파일
  * 웹 페이지 미리보기
  * Youtube 미리보기
- * vine 동영상
+ * vine 동영상 (아마도)
 
 
 ## LICENSE

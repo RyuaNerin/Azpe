@@ -132,18 +132,42 @@ namespace Azpe
 			File.WriteAllText(Cache.m_path, jo.ToString(true), Encoding.UTF8);
 		}
 
-		public static string GetFileName(string url)
+		public static string GetCachePath(string url)
 		{
 			lock (Cache.m_cache)
 			{
-				for (int i = 0; i < Cache.m_cache.Count; ++i)
+				int i = 0;
+				while (i < Cache.m_cache.Count)
+				{
 					if (Cache.m_cache[i].Url == url)
-						return Cache.m_cache[i].Name;
+					{
+						var cachePath = Path.Combine(Cache.CachePath, Cache.m_cache[i].Name);
+
+						if (File.Exists(cachePath) && new FileInfo(cachePath).Length > 0)
+						{
+							File.SetLastAccessTimeUtc(cachePath, DateTime.UtcNow);
+							return cachePath;
+						}
+						else
+						{
+							try
+							{
+								File.Delete(cachePath);
+							}
+							catch
+							{ }
+
+							Cache.m_cache.RemoveAt(i);
+						};
+					}
+					else
+						i++;
+				}
 
 				var info = new CacheInfo(url);
 				Cache.m_cache.Add(info);
 				Cache.Save();
-				return info.Name;
+				return Path.Combine(Cache.CachePath, info.Name);
 			}
 		}
 

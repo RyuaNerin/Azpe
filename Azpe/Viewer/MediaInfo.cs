@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace Azpe.Viewer
 {
@@ -31,11 +32,88 @@ namespace Azpe.Viewer
 		public float		Speed		{ get; private set; }
 		public Statuses		Status		{ get; private set; }
 
-		private MediaInfo()
+		~MediaInfo()
 		{
-			this.m_web = new WebClient();
-			this.m_web.DownloadFileCompleted	+= DownloadFileCompleted;
-			this.m_web.DownloadProgressChanged	+= DownloadProgressChanged;
+			this.Dispose(false);
+		}
+
+		public void Dispose()
+		{
+			this.Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		private bool m_disposed = false;
+		protected virtual void Dispose(bool disposing)
+		{
+			if (!this.m_disposed)
+			{
+				this.m_disposed = true;
+
+				if (this.Image != null)
+				{
+					this.Image.Dispose();
+					this.Image = null;
+				}
+
+				if (this.m_web != null)
+				{
+					if (this.m_web.IsBusy)
+					{
+						this.m_web.CancelAsync();
+						while (this.m_web.IsBusy)
+							Thread.Sleep(250);
+					}
+					this.m_web.Dispose();
+				}
+			}
+		}
+
+		public MediaInfo(string url, int index)
+		{
+			MediaTypes	mediaType;
+
+			this.m_index	= index;
+			this.OrigUrl	= url;
+			this.Url		= MediaInfo.FixUrl(url, out mediaType);
+			this.MediaType	= mediaType;
+		}
+
+		public void SetParent(FrmViewer parent)
+		{
+			this.m_parent = parent;
+		}
+
+		public void RefreshItem()
+		{
+			if (!this.m_disposed && this.m_parent.CurrentIndex == this.m_index)
+				this.m_parent.RefreshItem();
+		}
+
+		public void StartDownload()
+		{
+			this.Status = Statuses.Download;
+
+			try
+			{
+				File.Delete(this.m_temp);
+			}
+			catch
+			{ }
+
+			new Task(this.Download).Start();
+
+			this.RefreshItem();
+		}
+
+		public void CreateWebClient()
+		{
+			if (this.m_web == null)
+			{
+				this.m_web = new WebClient();
+				this.m_web.DownloadFileCompleted	+= DownloadFileCompleted;
+				this.m_web.DownloadProgressChanged	+= DownloadProgressChanged;
+			}
 		}
 
 		private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
@@ -78,89 +156,6 @@ namespace Azpe.Viewer
 			}
 		}
 
-		~MediaInfo()
-		{
-			this.Dispose(false);
-		}
-
-		public void Dispose()
-		{
-			this.Dispose(true);
-			GC.SuppressFinalize(this);
-		}
-
-		private bool m_disposed = false;
-		protected virtual void Dispose(bool disposing)
-		{
-			if (!this.m_disposed)
-			{
-				this.m_disposed = true;
-
-				if (this.Image != null)
-				{
-					this.Image.Dispose();
-					this.Image = null;
-				}
-
-				if (this.m_web != null)
-				{
-					if (this.m_web.IsBusy)
-					{
-						this.m_web.CancelAsync();
-						while (this.m_web.IsBusy)
-							Thread.Sleep(250);
-					}
-					this.m_web.Dispose();
-				}
-			}
-		}
-
-		public static MediaInfo Create(string url, int index)
-		{
-			MediaTypes	mediaType;
-			string		urlFixed = MediaInfo.FixUrl(url, out mediaType);
-
-			if (urlFixed == null)
-				return null;
-
-			var media = new MediaInfo();
-
-			media.m_index	= index;
-
-			media.OrigUrl	= url;
-			media.Url		= MediaInfo.FixUrl(url, out mediaType);
-			media.MediaType	= mediaType;
-
-			return media;
-		}
-
-		public void SetParent(FrmViewer parent)
-		{
-			this.m_parent = parent;
-		}
-
-		public void RefreshItem()
-		{
-			if (!this.m_disposed && this.m_parent.CurrentIndex == this.m_index)
-				this.m_parent.RefreshItem();
-		}
-
-		public void StartDownload()
-		{
-			this.Status = Statuses.Download;
-
-			try
-			{
-				File.Delete(this.m_temp);
-			}
-			catch
-			{ }
-
-			new Task(this.Download).Start();
-
-			this.RefreshItem();
-		}
-		
 		private static RegexOptions regRules = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
 		private static Regex regYoutube	= new Regex(@"^(?:https?://)?(?:(?:(?:www\.)?youtube\.com/(?:v/)?watch[\?#]?.*v=)|(?:youtu\.be/))([A-Za-z0-9_\-]+).*$", regRules);
 		private static Regex regVine	= new Regex(@"^https?://vine.co/v/[a-zA-Z0-9]+$", regRules);
@@ -253,7 +248,7 @@ namespace Azpe.Viewer
 
 			} while (--retry > 0 && this.Status == Statuses.Error);
 
-			if (this.Status == Statuses.Complete)
+			if (this.m_web != null && this.Status == Statuses.Complete)
 				this.m_web.Dispose();
 
 			this.RefreshItem();
@@ -262,18 +257,12 @@ namespace Azpe.Viewer
 		private static char[] InvalidChars = Path.GetInvalidFileNameChars();
 		private static Stream GetCache(string url, out string cachePath)
 		{
-			cachePath = Path.Combine(Cache.CachePath, Cache.GetFileName(url));
+			cachePath = Cache.GetCachePath(url);
 
-			if (File.Exists(cachePath) && new FileInfo(cachePath).Length > 0)
-			{
-				File.SetLastAccessTimeUtc(cachePath, DateTime.UtcNow);
+			if (File.Exists(cachePath))
 				return new FileStream(cachePath, FileMode.Open, FileAccess.Read);
-			}
 			else
-			{
-				Cache.Remove(url, null);
 				return null;
-			}
 		}
 
 		private void GetImage()
@@ -287,16 +276,8 @@ namespace Azpe.Viewer
 
 				if (file != null)
 				{
-					try
-					{
-						using (file)
-							this.Image = Image.FromStream(file);
-					}
-					catch
-					{
-						Cache.Remove(this.Url, null);
-						throw;
-					}
+					using (file)
+						this.Image = Image.FromStream(file);
 				}
 				else
 				{
@@ -305,8 +286,11 @@ namespace Azpe.Viewer
 
 					this.m_temp = cachePath + ".tmp";
 
-					this.m_date = DateTime.UtcNow;
+					this.CreateWebClient();
+
 					this.m_web.Headers.Add(HttpRequestHeader.UserAgent, Program.UserAgent);
+
+					this.m_date = DateTime.UtcNow;
 					this.m_web.DownloadFileAsync(new Uri(this.Url), this.m_temp, this.Url);
 
 					while (this.m_web.IsBusy)
@@ -322,11 +306,12 @@ namespace Azpe.Viewer
 			}
 			catch
 			{
+				Cache.Remove(this.Url, null);
 				this.Status = Statuses.Error;
 			}
 		}
 		
-		private static Regex regVineMp4 = new Regex("<video src=\"([^\"])\">", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+		private static Regex regVineMp4 = new Regex("<video src=\"([^\"]+)\"", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 		private void GetVideo()
 		{
 			if (this.OrigUrl.Contains("vine.co/v/"))
@@ -335,9 +320,12 @@ namespace Azpe.Viewer
 
 				try
 				{
-					this.m_web.Headers.Add(HttpRequestHeader.UserAgent, Program.UserAgent);
+					var req = HttpWebRequest.Create(this.Url) as HttpWebRequest;
+					req.UserAgent = Program.UserAgent;
 
-					body = this.m_web.DownloadString(this.Url);
+					using (var res = req.GetResponse())
+					using (var red = new StreamReader(res.GetResponseStream(), Encoding.UTF8))
+						body = red.ReadToEnd();
 				}
 				catch
 				{
@@ -345,15 +333,15 @@ namespace Azpe.Viewer
 					return;
 				}
 
-				var m = regVine.Match(body);
+				var m = regVineMp4.Match(body);
 				if (m.Success)
 				{
-					this.Status = Statuses.Complete;
-					this.Url = m.Groups[1].Value;
+					this.Status	= Statuses.Complete;
+					this.Url	= m.Groups[1].Value;
 				}
 				else
 				{
-					this.Status = Statuses.Error;
+					this.Status	= Statuses.Error;
 				}
 			}
 			else
