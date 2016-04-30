@@ -489,7 +489,8 @@ namespace Azpe
 					return true;
 
 				case Keys.W:
-					Process.Start(this.Current.OrigUrl).Dispose();
+					using (Process.Start(this.Current.OrigUrl))
+                    { };
 					return true;
 					
 				case Keys.Z:
@@ -499,9 +500,10 @@ namespace Azpe
 				case Keys.V:
 					MessageBox.Show(this, Program.TagName, "Azpe", MessageBoxButtons.OK);
 					return true;
-					
-				case Keys.F1:
-					Process.Start("http://ryuanerin.github.io/Azpe").Dispose();
+
+                case Keys.F1:
+                    using (Process.Start("https://github.com/RyuaNerin/Azpe"))
+                    { };
 					return true;
 
 				case Keys.M:
