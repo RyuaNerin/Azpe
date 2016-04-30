@@ -117,7 +117,7 @@ namespace Azpe
 							MessageBoxIcon.Question
 							) == DialogResult.Yes)
 					{
-						Process.Start((string)jo["html_url"]);
+						Process.Start((string)jo["html_url"]).Dispose();
 						Application.Exit();
 					}
 				}

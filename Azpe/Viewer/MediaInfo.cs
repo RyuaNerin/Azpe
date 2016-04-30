@@ -2,10 +2,10 @@
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text;
 
 namespace Azpe.Viewer
 {
@@ -118,27 +118,24 @@ namespace Azpe.Viewer
 
 		private void DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
 		{
-			lock (this.m_web)
-			{
-				DateTime dt = DateTime.UtcNow;
-				TimeSpan ts = dt - this.m_date;
+            DateTime dt = DateTime.UtcNow;
+            TimeSpan ts = dt - this.m_date;
 
-				if (this.m_down2 == 0)
-				{
-					this.Speed		= e.BytesReceived / (float)ts.TotalSeconds;
+            if (this.m_down2 == 0)
+            {
+                this.Speed		= e.BytesReceived / (float)ts.TotalSeconds;
 
-					this.m_date		= dt;
-					this.m_down2	= e.BytesReceived;
-				}
-				else if (ts.TotalMilliseconds > 250)
-				{
-					this.m_speed2	= (e.BytesReceived - this.m_down2) / (float)ts.TotalSeconds;
-					this.Speed		= (this.Speed * 3 + this.m_speed2) / 4;
+                this.m_date		= dt;
+                this.m_down2	= e.BytesReceived;
+            }
+            else if (ts.TotalMilliseconds > 250)
+            {
+                this.m_speed2	= (e.BytesReceived - this.m_down2) / (float)ts.TotalSeconds;
+                this.Speed		= (this.Speed * 3 + this.m_speed2) / 4;
 
-					this.m_date		= dt;
-					this.m_down2	= e.BytesReceived;
-				}
-			}
+                this.m_date		= dt;
+                this.m_down2	= e.BytesReceived;
+            }
 
 			this.Progress = e.TotalBytesToReceive == 0 ? 0 : e.BytesReceived / (float)e.TotalBytesToReceive;
 
@@ -167,8 +164,15 @@ namespace Azpe.Viewer
 			if (url.Contains("tweet_video_thumb"))
 			{
 				mediaType = MediaTypes.Video;
-				return url.Replace("tweet_video_thumb", "tweet_video").Replace(".png", ".mp4");
+                url = Path.ChangeExtension(url.Replace("tweet_video_thumb", "tweet_video"), ".mp4");
+				return url;
 			}
+            
+            if (url.Contains("ext_tw_video_thumb"))
+            {
+                mediaType = MediaTypes.VideoThumb;
+                return url;
+            }
 
 			if (url.Contains("ext_tw_video"))
 			{
@@ -231,21 +235,10 @@ namespace Azpe.Viewer
 			int retry = 3;
 			do
 			{
-				switch (this.MediaType)
-				{
-					case MediaTypes.PageThumb:
-						this.GetPageThumb();
-						break;
+                if (this.MediaType == MediaTypes.PageThumb)
+                    this.GetPageThumb();
 
-					case MediaTypes.Video:
-						this.GetVideo();
-						break;
-
-					default:
-						this.GetImage();
-						break;
-				}
-
+                this.Download(this.MediaType == MediaTypes.Video);
 			} while (--retry > 0 && this.Status == Statuses.Error);
 
 			if (this.m_web != null && this.Status == Statuses.Complete)
@@ -255,9 +248,9 @@ namespace Azpe.Viewer
 		}
 
 		private static char[] InvalidChars = Path.GetInvalidFileNameChars();
-		private static Stream GetCache(string url, out string cachePath)
+		private static Stream GetCache(string url, out string cacheName, out string cachePath)
 		{
-			cachePath = Cache.GetCachePath(url);
+			cachePath = Cache.GetCachePath(url, out cacheName);
 
 			if (File.Exists(cachePath))
 				return new FileStream(cachePath, FileMode.Open, FileAccess.Read);
@@ -265,19 +258,25 @@ namespace Azpe.Viewer
 				return null;
 		}
 
-		private void GetImage()
+		private void Download(bool isVideo)
 		{
 			try
 			{
-				string cachePath;
-				Stream file = MediaInfo.GetCache(this.Url, out cachePath);
+                if (isVideo)
+                    this.GetVideoUrl();
+
+				string cacheName, cachePath;
+				Stream file = MediaInfo.GetCache(this.OrigUrl, out cacheName, out cachePath);
 
 				this.CachePath = cachePath;
-
-				if (file != null)
+                
+				if (file != null )
 				{
-					using (file)
-						this.Image = Image.FromStream(file);
+                    if (isVideo)
+                        file.Dispose();
+                    else
+					    using (file)
+						    this.Image = Image.FromStream(file);
 				}
 				else
 				{
@@ -296,10 +295,21 @@ namespace Azpe.Viewer
 					while (this.m_web.IsBusy)
 						Thread.Sleep(100);
 
+                    var ext = this.Url;
+                    ext = ext.Substring(ext.IndexOf('.', ext.LastIndexOf('/') + 1));
+                    if (ext.IndexOf('?') != -1) ext = ext.Substring(0, ext.IndexOf('?'));
+                    if (ext.IndexOf(':') != -1) ext = ext.Substring(0, ext.IndexOf(':'));
+
+                    cachePath = cachePath + ext;
+                    this.CachePath = cachePath;
+
+                    Cache.SetNewCachePath(cacheName, cacheName + ext);
+
 					File.Move(this.m_temp, cachePath);
 
-					using (file = new FileStream(cachePath, FileMode.Open, FileAccess.Read))
-						this.Image = Image.FromStream(file);
+                    if (!isVideo)
+                        using (file = new FileStream(cachePath, FileMode.Open, FileAccess.Read))
+                            this.Image = Image.FromStream(file);
 				}
 				
 				this.Status = Statuses.Complete;
@@ -312,7 +322,7 @@ namespace Azpe.Viewer
 		}
 		
 		private static Regex regVineMp4 = new Regex("<video src=\"([^\"]+)\"", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-		private void GetVideo()
+		private void GetVideoUrl()
 		{
 			if (this.OrigUrl.Contains("vine.co/v/"))
 			{
@@ -336,17 +346,12 @@ namespace Azpe.Viewer
 				var m = regVineMp4.Match(body);
 				if (m.Success)
 				{
-					this.Status	= Statuses.Complete;
 					this.Url	= m.Groups[1].Value;
 				}
 				else
 				{
 					this.Status	= Statuses.Error;
 				}
-			}
-			else
-			{
-				this.Status = Statuses.Complete;
 			}
 		}
 
@@ -366,6 +371,8 @@ namespace Azpe.Viewer
 
 					res.Close();
 				}
+
+                return;
 			}
 			catch
 			{

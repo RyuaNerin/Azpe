@@ -68,10 +68,9 @@ namespace Azpe
 						}
 					}
 				}
-
-				Cache.ClearCache();
 			}
 
+            Cache.ClearCache();
 		}
 		private static void ClearCache()
 		{
@@ -132,7 +131,7 @@ namespace Azpe
 			File.WriteAllText(Cache.m_path, jo.ToString(true), Encoding.UTF8);
 		}
 
-		public static string GetCachePath(string url)
+		public static string GetCachePath(string url, out string cacheName)
 		{
 			lock (Cache.m_cache)
 			{
@@ -146,6 +145,7 @@ namespace Azpe
 						if (File.Exists(cachePath) && new FileInfo(cachePath).Length > 0)
 						{
 							File.SetLastAccessTimeUtc(cachePath, DateTime.UtcNow);
+                            cacheName = Cache.m_cache[i].Name;
 							return cachePath;
 						}
 						else
@@ -161,15 +161,38 @@ namespace Azpe
 						};
 					}
 					else
-						i++;
+						++i;
 				}
 
 				var info = new CacheInfo(url);
 				Cache.m_cache.Add(info);
 				Cache.Save();
+                cacheName = info.Name;
 				return Path.Combine(Cache.CachePath, info.Name);
 			}
 		}
+
+        public static void SetNewCachePath(string before, string after)
+        {
+			lock (Cache.m_cache)
+			{
+				int i = 0;
+				while (i < Cache.m_cache.Count)
+				{
+					if (Cache.m_cache[i].Name == before)
+					{
+                        var st = Cache.m_cache[i];
+                        st.Name = after;
+                        Cache.m_cache[i] = st;
+                        break;
+                    }
+                    else
+                        ++i;
+                }
+
+                Cache.Save();
+            }
+        }
 
 		public static void Remove(string url, string name, bool save = true)
 		{

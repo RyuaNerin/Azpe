@@ -114,7 +114,7 @@ namespace Azpe
 
 			this.Invoke(new Action(() => MessageBox.Show(this, "설치가 끝났어요!\n아즈레아를 재실행합니다!", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Information)));
 
-			Process.Start(pathAz);
+			Process.Start(pathAz).Dispose();
 
 			e.Result = 0;
 		}

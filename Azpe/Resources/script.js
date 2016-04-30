@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////
 // 
-// Azpe (based AZPreview made by @Gisuksagi)
+// Azpe (based AZPreview made by @SasarinoMARi)
 // By RyuaNerin <admin@ryuanerin.kr>
 //
 ////////////////////////////////////////////////////////////
@@ -13,7 +13,7 @@ else
 {
 	var path = System.applicationPath.replace(/[^\.\\]+\.exe/, '') + 'scripts\\azpe.js.Private\\azpe.exe';
 
-	var vs = 'a110';
+	var vs = 'a120';
 
 	var s = 1;
 	var c = 2;

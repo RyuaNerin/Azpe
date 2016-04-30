@@ -191,11 +191,19 @@ namespace Azpe.Viewer
 				{
 					this.getRectangle(this.m_image, this.m_original, out dest, out src);
 					e.Graphics.DrawImage(this.m_image, dest, src, GraphicsUnit.Pixel);
+
+                    if (this.m_type == MediaTypes.PageThumb ||
+                        this.m_type == MediaTypes.VideoThumb)
+                        e.Graphics.DrawImage(Properties.Resources.browser, 0, 0);
 				}
 				else
 				{
 					this.getRectangle(Properties.Resources.error, false, out dest, out src);
 					e.Graphics.DrawImage(Properties.Resources.error, dest, src, GraphicsUnit.Pixel);
+
+                    if (this.m_type == MediaTypes.PageThumb ||
+                        this.m_type == MediaTypes.VideoThumb)
+                        e.Graphics.DrawImage(Properties.Resources.browser, dest.Left, dest.Top);
 				}
 			}
 		}

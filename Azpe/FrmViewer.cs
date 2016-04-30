@@ -70,6 +70,8 @@ namespace Azpe
 				this.m_host.Dock	= DockStyle.Fill;
 				this.m_host.Child	= this.m_media;
 				this.Controls.Add(this.m_host);
+
+                this.m_media.Media.Stretch = System.Windows.Media.Stretch.Uniform;
 			}
 
 			this.ResumeLayout(false);
@@ -80,6 +82,9 @@ namespace Azpe
 			if (Settings.Top != -1)		this.Top	= Settings.Top;
 			if (Settings.Width != -1)	this.Width	= Settings.Width;
 			if (Settings.Height != -1)	this.Height	= Settings.Height;
+
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += this.SystemEvents_DisplaySettingsChanged;
+            this.CalcScreenBounds();
 		}
 
 		public new void Activate()
@@ -260,7 +265,7 @@ namespace Azpe
 								case Statuses.Download:
 									this.m_pic.Visible	= true;
 									this.m_host.Visible = false;
-									this.m_pic.SetDownload(0, 0);
+									this.m_pic.SetDownload(cur.Progress, cur.Speed);
 									break;
 
 								case Statuses.Complete:
@@ -273,9 +278,9 @@ namespace Azpe
 										this.m_indexBef	 = this.m_index;
 
 										this.m_media.Media.Source = null;
-										this.m_media.Media.Source = new Uri(cur.Url);
+										this.m_media.Media.Source = new Uri(cur.CachePath);
 									}
-
+                                    
 									break;
 
 								case Statuses.Error:
@@ -292,34 +297,35 @@ namespace Azpe
 		}
 
 		#region Key Event
-		private void CalcScreen()
-		{
-			this.m_xMin = this.m_yMin = int.MaxValue;
-			this.m_xMax = this.m_yMax = int.MinValue;
-
-			foreach (Screen screen in Screen.AllScreens)
-			{
-				var bounds = screen.Bounds;
-
-				this.m_xMin = Math.Min(this.m_xMin, bounds.Left);
-				this.m_yMin = Math.Min(this.m_yMin, bounds.Y);
-
-				this.m_xMax = Math.Max(this.m_xMax, bounds.Right);
-				this.m_yMax = Math.Max(this.m_yMax, bounds.Bottom);
-			}
-		}
 
 		private const int WM_KEYDOWN = 0x100;
-		private const int WM_KEYUP = 0x101;
 		private const int WM_SYSKEYDOWN = 0x104;
 
-		private int		m_move;
-		private int		m_xMin, m_xMax;
-		private int		m_yMin, m_yMax;
-		private bool	m_keyRepeat;
+		private int	m_move;
+
+        private Rectangle m_screenRect;
+        
+        private void SystemEvents_DisplaySettingsChanged(object sender, EventArgs e)
+        {
+            this.CalcScreenBounds();
+        }
+
+        private void CalcScreenBounds()
+        {
+            this.m_screenRect = SystemInformation.VirtualScreen;
+
+            new Rectangle(
+                this.m_screenRect.Left - 20,
+                this.m_screenRect.Width - this.Width + 40,
+                this.m_screenRect.Top - 20,
+                this.m_screenRect.Height - this.Height + 40);
+        }
 
 		protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
 		{
+            if (msg.Msg != WM_KEYDOWN && msg.Msg != WM_SYSKEYDOWN)
+                this.m_move = 0;
+
 			switch (keyData)
 			{
 				case Keys.Left:		this.CurrentIndex--;	return true;
@@ -353,92 +359,48 @@ namespace Azpe
 				case Keys.Shift | Keys.Left:
 					if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
 					{
-						if (!this.m_keyRepeat)
-						{
-							this.m_move = 0;
-							this.m_keyRepeat = true;
-							this.CalcScreen();
-						}
-
 						if (this.m_move < 30) this.m_move++;
 
 						var val = this.Left - this.m_move;
-						if (val < this.m_xMin - this.Width + 20)
-							val = this.m_xMin - this.Width + 20;
+						if (val < this.m_screenRect.Left)
+							val = this.m_screenRect.Left;
 						this.Left = val;
-					}
-					else
-					{
-						this.m_keyRepeat = false;
 					}
 					break;
 
 				case Keys.Shift | Keys.Right:
 					if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
 					{
-						if (!this.m_keyRepeat)
-						{
-							this.m_move = 0;
-							this.m_keyRepeat = true;
-							this.CalcScreen();
-						}
-
 						if (this.m_move < 30) this.m_move++;
 
 						var val = this.Left + this.m_move;
-						if (val > this.m_xMax - 20)
-							val = this.m_xMax - 20;
+						if (val > this.m_screenRect.Right)
+							val = this.m_screenRect.Right;
 						this.Left = val;
-					}
-					else
-					{
-						this.m_keyRepeat = false;
 					}
 					break;
 
 				case Keys.Shift | Keys.Up:
 					if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
 					{
-						if (!this.m_keyRepeat)
-						{
-							this.m_move = 0;
-							this.m_keyRepeat = true;
-							this.CalcScreen();
-						}
-
 						if (this.m_move < 30) this.m_move++;
 
 						var val = this.Top - this.m_move;
-						if (val < this.m_yMin - this.Height + 20)
-							val = this.m_yMin - this.Height + 20;
+						if (val < this.m_screenRect.Left)
+							val = this.m_screenRect.Left;
 						this.Top = val;
-					}
-					else
-					{
-						this.m_keyRepeat = false;
 					}
 					break;
 
 				case Keys.Shift | Keys.Down:
 					if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
 					{
-						if (!this.m_keyRepeat)
-						{
-							this.m_move = 0;
-							this.m_keyRepeat = true;
-							this.CalcScreen();
-						}
-
 						if (this.m_move < 30) this.m_move++;
 
 						var val  = this.Top + this.m_move;
-						if (val > this.m_yMax)
-							val = this.m_yMax;
+						if (val > this.m_screenRect.Bottom)
+							val = this.m_screenRect.Bottom;
 						this.Top = val;
-					}
-					else
-					{
-						this.m_keyRepeat = false;
 					}
 					break;
 
@@ -458,9 +420,8 @@ namespace Azpe
 					if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
 					{
 						int val = this.Width + 20;
-						var scr = Screen.FromHandle(this.Handle);
-						if (this.Width > scr.Bounds.Width - this.Left)
-							this.Width = scr.Bounds.Width - this.Left;
+						if (this.Width > m_screenRect.Width - this.Left)
+							this.Width = m_screenRect.Width - this.Left;
 						this.Width = val;
 					}
 					break;
@@ -479,9 +440,8 @@ namespace Azpe
 					if (msg.Msg == WM_KEYDOWN || msg.Msg == WM_SYSKEYDOWN)
 					{
 						int val = this.Height + 20;
-						var scr = Screen.FromHandle(this.Handle);
-						if (val > scr.Bounds.Height - this.Top)
-							val = scr.Bounds.Height - this.Top;
+						if (val > m_screenRect.Height - this.Top)
+							val = m_screenRect.Height - this.Top;
 						this.Height = val;
 					}
 					break;
@@ -529,7 +489,7 @@ namespace Azpe
 					return true;
 
 				case Keys.W:
-					Process.Start(this.Current.OrigUrl);
+					Process.Start(this.Current.OrigUrl).Dispose();
 					return true;
 					
 				case Keys.Z:
@@ -541,7 +501,7 @@ namespace Azpe
 					return true;
 					
 				case Keys.F1:
-					Process.Start("http://ryuanerin.github.io/Azpe");
+					Process.Start("http://ryuanerin.github.io/Azpe").Dispose();
 					return true;
 
 				case Keys.M:

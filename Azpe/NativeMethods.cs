@@ -10,10 +10,6 @@ namespace Azpe
 	[SuppressUnmanagedCodeSecurity]
 	internal static class NativeMethods
 	{
-		public static void FocusWindow(IntPtr hwnd)
-		{
-		}
-		
 		public static void SendData(IntPtr hwnd, string msg)
 		{
 			byte[]	buff = System.Text.Encoding.UTF8.GetBytes(msg);
