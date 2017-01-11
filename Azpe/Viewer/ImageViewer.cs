@@ -292,8 +292,11 @@ namespace Azpe.Viewer
 		{
 			if (this.m_status != Statuses.Complete || !this.m_move) return;
 
-			this.m_location.X += (int)((this.m_mouse.X - e.X) * 1.0d * this.m_image.Width / this.Width);
-			this.m_location.Y += (int)((this.m_mouse.Y - e.Y) * 1.0d * this.m_image.Height / this.Height);
+            double scaleX = this.Width  / (double)this.m_image.Width;
+            double scaleY = this.Height / (double)this.m_image.Height;
+
+            this.m_location.X += (int)((this.m_mouse.X - e.X) * scaleX * this.m_image.Width / this.Width);
+			this.m_location.Y += (int)((this.m_mouse.Y - e.Y) * scaleY * this.m_image.Height / this.Height);
 
 			this.m_mouse.X = e.X;
 			this.m_mouse.Y = e.Y;
