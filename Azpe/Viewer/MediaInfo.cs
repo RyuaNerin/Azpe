@@ -272,6 +272,7 @@ namespace Azpe.Viewer
                 
 				if (file != null )
 				{
+                    // 비디오 다운로드 부분
                     if (isVideo)
                         file.Dispose();
                     else
