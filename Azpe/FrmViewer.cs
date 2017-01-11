@@ -467,7 +467,7 @@ namespace Azpe
 							if (this.sfd.ShowDialog() == DialogResult.OK)
 							{
 								File.Copy(cur.CachePath, this.sfd.FileName);
-
+                                // 이미지 저장 경로 갱신
 								Settings.SavePath = Path.GetFileName(this.sfd.FileName);
 								Settings.Save();
 							}
@@ -532,8 +532,11 @@ namespace Azpe
 		#endregion
 
 		private void FrmViewer_FormClosing(object sender, FormClosingEventArgs e)
-		{
-			Settings.Left	= this.Left;
+        {
+            if (this.WindowState == FormWindowState.Maximized)
+                this.WindowState = FormWindowState.Normal;
+
+            Settings.Left	= this.Left;
 			Settings.Top	= this.Top;
 			Settings.Width	= this.Width;
 			Settings.Height	= this.Height;
